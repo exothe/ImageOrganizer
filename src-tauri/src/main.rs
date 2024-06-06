@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::fs::{read, copy};
+use std::fs::copy;
 use std::path::Path;
 use std::collections::HashMap;
 use tauri::Manager;
@@ -10,16 +10,6 @@ use tauri::Manager;
 #[tauri::command]
 fn greet(name: &str) -> String {
     format!("Hello, {}! Your name has length {}!", name, name.len())
-}
-
-#[tauri::command]
-async fn load_file_content(path: String) -> Result<Vec<u8>, String> {
-    let result = read(path);
-
-    match result {
-        Err(e) => Err(e.to_string()),
-        Ok(content) => Ok(content)
-    }
 }
 
 #[derive(serde::Serialize)]
@@ -73,7 +63,7 @@ fn main() {
             }
             Ok(())
           })
-        .invoke_handler(tauri::generate_handler![greet, load_file_content, save_files])
+        .invoke_handler(tauri::generate_handler![greet, save_files])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
