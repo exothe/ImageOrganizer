@@ -115,12 +115,18 @@ export function ImageOrganizer() {
     setAcceptedFiles([]);
   }
 
+  function clearUnreviewedImages() {
+    setUnreviewedFiles([]);
+  }
+
   return (
     <div className="p-2">
       <h1 className="text-3xl font-bold">Bildorganizierer</h1>
       <div className="grid grid-cols-2 gap-2 justify-items-center">
         <div className="flex justify-between w-full">
-          <div></div>
+          <Button onClick={clearUnreviewedImages}>
+            <ArrowBigLeft />
+          </Button>
           <Button onClick={importImages}>
             Bilder importieren <ArrowDownToLine />
           </Button>
