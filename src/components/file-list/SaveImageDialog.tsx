@@ -16,6 +16,16 @@ export function SaveImageDialog({
   React.useEffect(() => {
     if (saveImageResult) {
       setOpen(true);
+
+      if (Object.keys(saveImageResult.renamed_files).length > 0) {
+        setAcceptedFiles((acceptedFiles) =>
+          acceptedFiles.map((file) =>
+            file in saveImageResult.renamed_files
+              ? saveImageResult.renamed_files[file]
+              : file,
+          ),
+        );
+      }
     }
   }, [saveImageResult]);
 
@@ -23,7 +33,9 @@ export function SaveImageDialog({
     if (saveImageResult) {
       setAcceptedFiles((acceptedFiles) =>
         acceptedFiles.filter(
-          (file) => !saveImageResult.successfully_saved_files.includes(file),
+          (file) =>
+            !Object.values(saveImageResult.renamed_files).includes(file) &&
+            !saveImageResult.successfully_saved_files.includes(file),
         ),
       );
     }

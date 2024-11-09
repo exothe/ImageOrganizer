@@ -23,6 +23,68 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+  --color1-200: 211 40% 73%;
+  --color1: 211 50% 27%;
+  --color2: 213 100% 65%;
+  --color3: 210 58% 93%;
+
+  --background: var(--color3);
+  --foreground: var(--color1);
+
+  --content-background: 0 0% 100%;
+  --header-background: 0 0% 100%;
+
+  --navbar: var(--color3);
+  --navbar-foreground: var(--color1);
+
+  --card: 0 0% 100%;
+  --card-foreground: var(--color1);
+
+  --popover: 0 0% 100%;
+  --popover-foreground: var(--color1);
+
+  --primary: var(--color2);
+  --primary-foreground: 210 40% 98%;
+
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --border: 210 58% 86%;
+
+  --input: var(--color1-200);
+
+  --ring: 221.2 83.2% 53.3%;
+
+  --radius: 0.5rem;
+
+  --nav-height: 3rem;
+  --nav-width: 180px;
+
+  --link-foreground: 213, 94%, 68%;
+
+  /*
+     * Unsophisticated way to set the height of an iframe, that is inside of a <PageContent /> element.
+     * This is necessary because an iframe does not take as much height as possible with `height: 100%`. 
+     */
+  --content-height: calc(100dvh - var(--nav-height) * 4);
+
+  /* https://www.joshwcomeau.com/shadow-palette/ */
+  --shadow-color: 0deg 0% 50%;
+
+  --shadow-elevation-medium: 0px 0.2px 0.2px hsl(var(--shadow-color) / 0.29),
+    0px 0.4px 0.5px -0.6px hsl(var(--shadow-color) / 0.29),
+    0px 0.8px 0.9px -1.2px hsl(var(--shadow-color) / 0.29),
+    0.1px 1.6px 1.8px -1.9px hsl(var(--shadow-color) / 0.29),
+    0.1px 3.1px 3.5px -2.5px hsl(var(--shadow-color) / 0.29);
 }
 
 .container {

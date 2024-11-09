@@ -14,8 +14,11 @@ import {
   ArrowBigRight,
   ArrowDownToLine,
   ArrowUpFromLine,
+  Settings,
 } from "lucide-react";
 import { getFileExtension } from "../../common/functions";
+import { SettingsDialog } from "../../components/settings/SettingsDialog";
+import { useSettingsContext } from "../../components/settings/SettingsContext";
 
 export function ImageOrganizer() {
   const {
@@ -24,6 +27,8 @@ export function ImageOrganizer() {
     acceptedFiles,
     setAcceptedFiles,
   } = useOrganizerContext();
+
+  const { settings } = useSettingsContext();
 
   const [saveImageResult, setSaveImageResult] = React.useState<
     SaveImageResult | undefined
@@ -68,6 +73,7 @@ export function ImageOrganizer() {
     const result: SaveImageResult = await invoke("save_files", {
       paths: acceptedFiles,
       targetDirectory: dir,
+      saveAction: settings.saveAction,
     });
     setSaveImageResult(result);
   }
@@ -121,7 +127,15 @@ export function ImageOrganizer() {
 
   return (
     <div className="p-2">
-      <h1 className="text-3xl font-bold">Bildorganizierer</h1>
+      <div className="flex justify-between items-center w-full p-2">
+        <div />
+        <h1 className="text-3xl font-bold">Bildorganisierer</h1>
+        <SettingsDialog>
+          <Button variant="ghost">
+            <Settings />
+          </Button>
+        </SettingsDialog>
+      </div>
       <div className="grid grid-cols-2 gap-2 justify-items-center">
         <div className="flex justify-between w-full">
           <Button onClick={clearUnreviewedImages}>
