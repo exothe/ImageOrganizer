@@ -2,20 +2,24 @@ import { FileListRow } from "./FileListRow";
 import { useKeyPressEvent } from "react-use";
 import { useFileListFocusContext } from "./fileListFocusContext";
 import React from "react";
+import { File } from "../../routes/main-screen/organizerContext";
 
 interface Keymap {
   left?: (index: number | null) => void;
   right?: (index: number | null) => void;
+  tagKey?: (index: number | null, tag: string) => void;
 }
 
 export function FileList({
   files,
   keymap,
   id,
+  removeTag,
 }: {
-  files: string[];
+  files: File[];
   keymap?: Keymap;
   id: string;
+  removeTag: (index: number) => void;
 }) {
   const { fileListId, selectedIndex, setFocus, setFile } =
     useFileListFocusContext();
@@ -72,15 +76,20 @@ export function FileList({
     "ArrowRight",
     () => isActive() && keymap?.right?.(selectedIndex),
   );
+  useKeyPressEvent(
+    (e) => /^[a-z0-9]$/.test(e.key),
+    (e) => isActive() && keymap?.tagKey?.(selectedIndex, e.key),
+  );
 
   return (
     <div className="w-full">
       {files.map((file, i) => (
         <FileListRow
-          key={file}
+          key={file.path}
           file={file}
           selected={isActive() && i === selectedIndex}
           onClick={() => selectRow(i)}
+          removeTag={() => removeTag(i)}
         />
       ))}
     </div>

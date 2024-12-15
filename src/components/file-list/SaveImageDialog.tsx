@@ -20,8 +20,11 @@ export function SaveImageDialog({
       if (Object.keys(saveImageResult.renamed_files).length > 0) {
         setAcceptedFiles((acceptedFiles) =>
           acceptedFiles.map((file) =>
-            file in saveImageResult.renamed_files
-              ? saveImageResult.renamed_files[file]
+            file.path in saveImageResult.renamed_files
+              ? {
+                  path: saveImageResult.renamed_files[file.path],
+                  tag: file.tag,
+                }
               : file,
           ),
         );
@@ -34,8 +37,8 @@ export function SaveImageDialog({
       setAcceptedFiles((acceptedFiles) =>
         acceptedFiles.filter(
           (file) =>
-            !Object.values(saveImageResult.renamed_files).includes(file) &&
-            !saveImageResult.successfully_saved_files.includes(file),
+            !Object.values(saveImageResult.renamed_files).includes(file.path) &&
+            !saveImageResult.successfully_saved_files.includes(file.path),
         ),
       );
     }
@@ -52,13 +55,13 @@ export function SaveImageDialog({
       <Dialog.Content>
         <div className="flex justify-between pb-4">
           <span></span>
-          <h1 className="text-xl">
+          <Dialog.Title className="text-xl">
             {hasError && success
               ? "Dateien teilweise gespeichert"
               : hasError
                 ? "Fehler beim Speichern"
                 : "Dateien erfolgreich gespeichert"}
-          </h1>
+          </Dialog.Title>
           <Button variant="ghost" onClick={() => setOpen(false)}>
             <X />
           </Button>

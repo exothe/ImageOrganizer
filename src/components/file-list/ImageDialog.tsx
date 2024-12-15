@@ -13,7 +13,7 @@ export function ImageDialog() {
 
   React.useEffect(() => {
     if (file !== null && imgRef) {
-      imgRef.src = convertFileSrc(file);
+      imgRef.src = convertFileSrc(file.path);
     }
   }, [file]);
 
@@ -35,7 +35,9 @@ export function ImageDialog() {
           <>
             <div className="flex justify-between pb-4">
               <span></span>
-              <h1 className="text-xl">{getBasename(file)}</h1>
+              <Dialog.Title className="text-xl">
+                {getBasename(file.path)}
+              </Dialog.Title>
               <Button variant="ghost" onClick={() => setOpen(false)}>
                 <X />
               </Button>

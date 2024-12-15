@@ -19,6 +19,11 @@ import {
 import { getFileExtension } from "../../common/functions";
 import { SettingsDialog } from "../../components/settings/SettingsDialog";
 import { useSettingsContext } from "../../components/settings/SettingsContext";
+import { sortBy } from "lodash-es";
+import { Combobox } from "../../components/combobox/Combobox";
+import { Badge } from "../../components/badge/Badge";
+
+const UNTAGGED_FILTER = "__UNTAGGED";
 
 export function ImageOrganizer() {
   const {
@@ -33,6 +38,7 @@ export function ImageOrganizer() {
   const [saveImageResult, setSaveImageResult] = React.useState<
     SaveImageResult | undefined
   >();
+  const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
 
   async function importImages() {
     const files = await open({
@@ -53,8 +59,10 @@ export function ImageOrganizer() {
     const filteredFiles = (typeof files === "string" ? [files] : files).filter(
       (file) => {
         const hasExtension = getFileExtension(file) !== undefined;
-        const inUnreviewedFiles = unreviewedFiles.includes(file);
-        const inAcceptedFiles = acceptedFiles.includes(file);
+        const inUnreviewedFiles = unreviewedFiles.some(
+          (it) => it.path === file,
+        );
+        const inAcceptedFiles = acceptedFiles.some((it) => it.path === file);
 
         return hasExtension && !inUnreviewedFiles && !inAcceptedFiles;
       },
@@ -62,7 +70,9 @@ export function ImageOrganizer() {
 
     setUnreviewedFiles((unreviewedFiles) => [
       ...unreviewedFiles,
-      ...filteredFiles,
+      ...filteredFiles.map((file) => ({
+        path: file,
+      })),
     ]);
   }
 
@@ -71,7 +81,7 @@ export function ImageOrganizer() {
     if (dir === null) return;
 
     const result: SaveImageResult = await invoke("save_files", {
-      paths: acceptedFiles,
+      files: filteredAcceptedFiles,
       targetDirectory: dir,
       saveAction: settings.saveAction,
     });
@@ -108,6 +118,27 @@ export function ImageOrganizer() {
     setUnreviewedFiles((unreviewedFiles) => [...unreviewedFiles, file]);
   }
 
+  function filteredIndexToUnfiltered(index: number | null) {
+    if (index === null) return null;
+    const path = filteredAcceptedFiles[index].path;
+    const i = acceptedFiles.findIndex((file) => file.path === path);
+    return i === -1 ? null : i;
+  }
+
+  function tagFile(
+    mode: "unreviewed" | "accepted",
+    index: number | null,
+    tag?: string,
+  ) {
+    if (index === null) return;
+
+    (mode === "unreviewed" ? setUnreviewedFiles : setAcceptedFiles)((files) => {
+      const newFiles = [...files];
+      newFiles[index].tag = tag;
+      return newFiles;
+    });
+  }
+
   function acceptAllFiles() {
     setAcceptedFiles((acceptedFiles) => [...acceptedFiles, ...unreviewedFiles]);
     setUnreviewedFiles([]);
@@ -124,6 +155,28 @@ export function ImageOrganizer() {
   function clearUnreviewedImages() {
     setUnreviewedFiles([]);
   }
+
+  const fileTags = React.useMemo(() => {
+    const tags = new Set(acceptedFiles.map((file) => file.tag));
+    return sortBy([...tags].filter((tag) => tag !== undefined) as string[]);
+  }, [acceptedFiles]);
+
+  React.useEffect(() => {
+    setSelectedTags((tags) => tags.filter((tag) => fileTags.includes(tag)));
+  }, [setSelectedTags, fileTags]);
+
+  const filteredAcceptedFiles = React.useMemo(() => {
+    if (selectedTags.length === 0) {
+      return acceptedFiles;
+    } else {
+      const untaggedFilterActive = selectedTags.includes(UNTAGGED_FILTER);
+      return acceptedFiles.filter(
+        (file) =>
+          (file.tag && selectedTags.includes(file.tag)) ||
+          (untaggedFilterActive && file.tag === undefined),
+      );
+    }
+  }, [acceptedFiles, selectedTags]);
 
   return (
     <div className="p-2">
@@ -155,18 +208,72 @@ export function ImageOrganizer() {
           <Button onClick={saveImages}>
             Bilder speichern <ArrowUpFromLine />
           </Button>
-          <div></div>
+          {fileTags.length > 0 ? (
+            <Combobox
+              options={[
+                { value: UNTAGGED_FILTER, label: "ohne tag" },
+                ...fileTags.map((tag) => ({
+                  value: tag,
+                  label: tag.toUpperCase(),
+                })),
+              ]}
+              itemElement={(item) =>
+                item.value === UNTAGGED_FILTER ? (
+                  <div className="italic">{item.label}</div>
+                ) : (
+                  <Badge className="w-[3ch] text-sm justify-self-end">
+                    {item.label.toUpperCase()}
+                  </Badge>
+                )
+              }
+              previewFn={(items) =>
+                items.map((item) =>
+                  item.value === UNTAGGED_FILTER ? (
+                    <div className="italic">{item.label}</div>
+                  ) : (
+                    <Badge className="w-[3ch] text-sm justify-self-end">
+                      {item.label.toUpperCase()}
+                    </Badge>
+                  ),
+                )
+              }
+              value={selectedTags}
+              setValue={setSelectedTags}
+              emptyPreviewText="Nach Tag filtern"
+            />
+          ) : (
+            <div />
+          )}
         </div>
         <FileListFocusContextProvider>
           <ImageDialogContextProvider>
             <FileList
               files={unreviewedFiles}
-              keymap={{ left: rejectFile, right: acceptFile }}
+              keymap={{
+                left: rejectFile,
+                right: acceptFile,
+                tagKey: (index: number | null, tag: string) => {
+                  tagFile("unreviewed", index, tag);
+                  acceptFile(index);
+                },
+              }}
+              removeTag={(index: number) =>
+                tagFile("unreviewed", index, undefined)
+              }
               id="unreviewedFiles"
             />
             <FileList
-              files={acceptedFiles}
-              keymap={{ left: unacceptFile }}
+              files={filteredAcceptedFiles}
+              keymap={{
+                left: (index: any) => {
+                  unacceptFile(filteredIndexToUnfiltered(index));
+                },
+                tagKey: (index: number | null, tag: string) =>
+                  tagFile("accepted", filteredIndexToUnfiltered(index), tag),
+              }}
+              removeTag={(index: number) =>
+                tagFile("accepted", filteredIndexToUnfiltered(index), undefined)
+              }
               id="acceptedFiles"
             />
             <ImageDialog />

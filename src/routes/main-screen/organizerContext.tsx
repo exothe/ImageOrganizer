@@ -1,20 +1,25 @@
 import React from "react";
 interface OrganizerContext {
-  unreviewedFiles: string[];
-  setUnreviewedFiles: React.Dispatch<React.SetStateAction<string[]>>;
-  acceptedFiles: string[];
-  setAcceptedFiles: React.Dispatch<React.SetStateAction<string[]>>;
+  unreviewedFiles: File[];
+  setUnreviewedFiles: React.Dispatch<React.SetStateAction<File[]>>;
+  acceptedFiles: File[];
+  setAcceptedFiles: React.Dispatch<React.SetStateAction<File[]>>;
 }
 
 export const OrganizerContext = React.createContext<OrganizerContext | null>(
   null,
 );
 
+export type File = {
+  path: string;
+  tag?: string;
+};
+
 export function OrganizerContextProvider({
   children,
 }: React.PropsWithChildren) {
-  const [unreviewedFiles, setUnreviewedFiles] = React.useState<string[]>([]);
-  const [acceptedFiles, setAcceptedFiles] = React.useState<string[]>([]);
+  const [unreviewedFiles, setUnreviewedFiles] = React.useState<File[]>([]);
+  const [acceptedFiles, setAcceptedFiles] = React.useState<File[]>([]);
 
   return (
     <OrganizerContext.Provider

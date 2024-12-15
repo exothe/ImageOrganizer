@@ -27,9 +27,15 @@ enum SaveAction {
     MOVE,
 }
 
+#[derive(Debug, Deserialize)]
+struct UserFile {
+    path: String,
+    tag: Option<String>,
+}
+
 #[tauri::command]
 async fn save_files(
-    paths: Vec<String>,
+    files: Vec<UserFile>,
     target_directory: String,
     save_action: SaveAction,
 ) -> SaveResult {
@@ -40,8 +46,8 @@ async fn save_files(
     };
     let target_directory = Path::new(&target_directory);
 
-    for path in paths {
-        let path = Path::new(&path);
+    for file in files {
+        let path = Path::new(&file.path);
         let file_name = match path.file_name() {
             None => {
                 result.errors.insert(
