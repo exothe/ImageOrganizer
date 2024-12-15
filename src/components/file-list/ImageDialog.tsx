@@ -15,7 +15,7 @@ export function ImageDialog() {
     if (file !== null && imgRef) {
       imgRef.src = convertFileSrc(file.path);
     }
-  }, [file]);
+  }, [file, imgRef]);
 
   return (
     <Dialog.Root open={open && file !== null}>
