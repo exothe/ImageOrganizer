@@ -81,8 +81,10 @@ export function SaveImageDialog({
         {success && (
           <div>
             <h2>
-              Die Restlichen Dateien wurden gespeichert. Möchtest du sie aus der
-              Liste entfernen?
+              {hasError
+                ? "Die Restlichen Dateien wurden gespeichert."
+                : "Alle Dateien wurden erfolgreich gespeichert."}{" "}
+              Möchtest du sie aus der Liste entfernen?
             </h2>
             <div className="flex justify-center py-2">
               <Button onClick={clearAcceptedFiles}>
