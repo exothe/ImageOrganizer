@@ -30,7 +30,7 @@ export function SaveImageDialog({
         );
       }
     }
-  }, [saveImageResult]);
+  }, [saveImageResult, setAcceptedFiles]);
 
   function clearAcceptedFiles() {
     if (saveImageResult) {
@@ -46,7 +46,9 @@ export function SaveImageDialog({
   }
 
   const hasError =
-    saveImageResult && Object.keys(saveImageResult.errors).length > 0;
+    saveImageResult &&
+    (Object.keys(saveImageResult.errors).length > 0 ||
+      saveImageResult.global_errors.length > 0);
   const success =
     saveImageResult && saveImageResult.successfully_saved_files.length > 0;
 
@@ -70,6 +72,9 @@ export function SaveImageDialog({
           <div className="pb-4">
             <h2>Es sind Fehler aufgetreten:</h2>
             <ul className="list-disc list-inside">
+              {saveImageResult.global_errors.map((error, i) => (
+                <li key={i}>{error}</li>
+              ))}
               {Object.entries(saveImageResult.errors).map(([file, error]) => (
                 <li key={file}>
                   {getBasename(file)}: {error}

@@ -5,7 +5,6 @@ import { open } from "@tauri-apps/api/dialog";
 import { FileListFocusContextProvider } from "../../components/file-list/fileListFocusContext";
 import { ImageDialogContextProvider } from "../../components/file-list/imageDialogContext";
 import { ImageDialog } from "../../components/file-list/ImageDialog";
-import { invoke } from "@tauri-apps/api";
 import { SaveImageDialog } from "../../components/file-list/SaveImageDialog";
 import { SaveImageResult } from "../../model/model";
 import React from "react";
@@ -22,6 +21,7 @@ import { useSettingsContext } from "../../components/settings/SettingsContext";
 import { sortBy } from "lodash-es";
 import { Combobox } from "../../components/combobox/Combobox";
 import { Badge } from "../../components/badge/Badge";
+import { api } from "../../api";
 
 const UNTAGGED_FILTER = "__UNTAGGED";
 
@@ -80,11 +80,12 @@ export function ImageOrganizer() {
     const dir = await open({ directory: true });
     if (dir === null) return;
 
-    const result: SaveImageResult = await invoke("save_files", {
-      files: filteredAcceptedFiles,
-      targetDirectory: dir,
-      saveAction: settings.saveAction,
-    });
+    const result = await api.saveFiles(
+      filteredAcceptedFiles,
+      Array.isArray(dir) ? dir[0] : dir,
+      settings.saveAction,
+      settings.sortVariant,
+    );
     setSaveImageResult(result);
   }
 
@@ -229,9 +230,14 @@ export function ImageOrganizer() {
               previewFn={(items) =>
                 items.map((item) =>
                   item.value === UNTAGGED_FILTER ? (
-                    <div className="italic">{item.label}</div>
+                    <div key={item.value} className="italic">
+                      {item.label}
+                    </div>
                   ) : (
-                    <Badge className="w-[3ch] text-sm justify-self-end">
+                    <Badge
+                      key={item.value}
+                      className="w-[3ch] text-sm justify-self-end"
+                    >
                       {item.label.toUpperCase()}
                     </Badge>
                   ),

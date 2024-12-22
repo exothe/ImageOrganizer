@@ -1,9 +1,16 @@
 import React from "react";
+import { z } from "zod";
 
 export type SaveAction = "copy" | "move";
 
+export const SortVariant = z.object({
+  creationdate: z.object({ format: z.string() }),
+});
+export type SortVariant = z.infer<typeof SortVariant>;
+
 type Settings = {
   saveAction: SaveAction;
+  sortVariant?: SortVariant;
 };
 
 export const SettingsContext = React.createContext<{

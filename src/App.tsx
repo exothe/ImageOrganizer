@@ -6,9 +6,9 @@ import { OrganizerContextProvider } from "./routes/main-screen/organizerContext"
 function App() {
   return (
     <SettingsContextProvider>
-    <OrganizerContextProvider>
-      <ImageOrganizer />
-    </OrganizerContextProvider>
+      <OrganizerContextProvider>
+        <ImageOrganizer />
+      </OrganizerContextProvider>
     </SettingsContextProvider>
   );
 }

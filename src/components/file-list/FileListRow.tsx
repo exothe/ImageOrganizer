@@ -23,7 +23,7 @@ export function FileListRow({
   return (
     <div
       className={twMerge(
-        "bg-gray-100 hover:bg-gray-200 grid grid-cols-[10fr_1fr_1fr] gap-2 items-center",
+        "bg-gray-100 hover:bg-gray-200 grid grid-cols-[10fr_1fr_50px] gap-2 items-center",
         selected && "bg-blue-400 hover:bg-blue-500",
       )}
       onClick={onClick}
@@ -49,12 +49,14 @@ export function FileListRow({
       ) : (
         <div></div>
       )}
-      <Button
-        className="cursor-pointer justify-self-end"
-        onClick={() => setOpen(true)}
-      >
-        <Image />
-      </Button>
+      <div className="py-0.5">
+        <Button
+          className="cursor-pointer justify-self-end"
+          onClick={() => setOpen(true)}
+        >
+          <Image />
+        </Button>
+      </div>
     </div>
   );
 }
