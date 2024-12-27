@@ -4,7 +4,7 @@ import { useFileListFocusContext } from "./fileListFocusContext";
 import React from "react";
 import { X } from "lucide-react";
 import { getBasename } from "../../common/functions";
-import { convertFileSrc } from "@tauri-apps/api/tauri";
+import { convertFileSrc } from "@tauri-apps/api/core";
 
 export function ImageDialog() {
   const { open, setOpen } = useImageDialogContext();

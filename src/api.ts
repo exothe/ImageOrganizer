@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api";
+import { invoke } from "@tauri-apps/api/core";
 import { File } from "./routes/main-screen/organizerContext";
 import { SaveAction, SortVariant } from "./components/settings/SettingsContext";
 import { SaveImageResult } from "./model/model";

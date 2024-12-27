@@ -44,7 +44,11 @@ pub async fn save_files(
     // get the target paths if there is a sort variant, by invoking the respective function. If
     // some error occurs, we return it immediately in the save result.
     let target_paths = if let Some(sort_variant) = sort_variant {
-        let paths = file_sorting::sort_files(sort_variant, files.iter().map(|file| {Path::new(&file.path)}).collect(), target_directory);
+        let paths = file_sorting::sort_files(
+            sort_variant,
+            files.iter().map(|file| Path::new(&file.path)).collect(),
+            target_directory,
+        );
         match paths {
             Ok(paths) => Some(paths),
             Err(_) => {
@@ -104,12 +108,14 @@ pub async fn save_files(
                     result
                         .successfully_saved_files
                         .push(path.to_str().unwrap().to_string());
-                    result.renamed_files.insert(path.to_str().unwrap().to_string(), destination_path.to_str().unwrap().to_string());
+                    result.renamed_files.insert(
+                        path.to_str().unwrap().to_string(),
+                        destination_path.to_str().unwrap().to_string(),
+                    );
                 }
-            }
+            },
         };
     }
 
     return result;
 }
-

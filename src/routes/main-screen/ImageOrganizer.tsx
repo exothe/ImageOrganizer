@@ -1,7 +1,7 @@
 import { Button } from "@radix-ui/themes";
 import { FileList } from "../../components/file-list/FileList";
 import { useOrganizerContext } from "./organizerContext";
-import { open } from "@tauri-apps/api/dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import { FileListFocusContextProvider } from "../../components/file-list/fileListFocusContext";
 import { ImageDialogContextProvider } from "../../components/file-list/imageDialogContext";
 import { ImageDialog } from "../../components/file-list/ImageDialog";
