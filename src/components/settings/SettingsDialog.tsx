@@ -36,8 +36,22 @@ export function SettingsDialog({
         <div className="grid grid-cols-[1fr_5fr] gap-2 items-center">
           <div className="whitespace-nowrap">Dateien sortieren</div>
           <SortVariantSelect />
-          <div />
-          <SortVariantParamsForm />
+        </div>
+        <SortVariantParamsForm />
+        <div className="flex justify-between gap-4 items-center">
+          <div className="whitespace-nowrap">Bildvorschau anzeigen</div>
+          <Select
+            value={String(settings.showNeighbooringPictures)}
+            onValueChange={(value) =>
+              setSettings((settings) => ({
+                ...settings,
+                showNeighbooringPictures: value === "true",
+              }))
+            }
+          >
+            <Option value="true">Ja</Option>
+            <Option value="false">Nein</Option>
+          </Select>
         </div>
         <div className="w-full flex justify-end">
           <Dialog.Close>

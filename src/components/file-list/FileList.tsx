@@ -21,22 +21,29 @@ export function FileList({
   id: string;
   removeTag: (index: number) => void;
 }) {
-  const { fileListId, selectedIndex, setFocus, setFile } =
+  const { fileListId, selectedIndex, setFocus, setFiles } =
     useFileListFocusContext();
 
   function isActive() {
     return id === fileListId;
   }
 
-  function selectRow(index: number | null) {
-    if (index === null) {
-      setFocus(null, null);
-      setFile(null);
-    } else {
-      setFocus(id, index);
-      setFile(files[index]);
-    }
-  }
+  const selectRow = React.useCallback(
+    (index: number | null) => {
+      if (index === null) {
+        setFocus(null, null);
+        setFiles({ current: null, next: null, previous: null });
+      } else {
+        setFocus(id, index);
+        setFiles({
+          current: files[index],
+          previous: files[index - 1] ?? null,
+          next: files[index + 1] ?? null,
+        });
+      }
+    },
+    [files, id, setFiles, setFocus],
+  );
 
   React.useEffect(() => {
     if (!isActive() || selectedIndex === null) {

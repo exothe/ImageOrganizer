@@ -1,12 +1,18 @@
 import React from "react";
 import { File } from "../../routes/main-screen/organizerContext";
 
+type FileFocus = {
+  current: File | null;
+  previous: File | null;
+  next: File | null;
+};
+
 export const FileListFocusContext = React.createContext<{
   fileListId: string | null;
   selectedIndex: number | null;
   setFocus: (fileListId: string | null, selectedIndex: number | null) => void;
-  file: File | null;
-  setFile: React.Dispatch<React.SetStateAction<File | null>>;
+  files: FileFocus;
+  setFiles: React.Dispatch<React.SetStateAction<FileFocus>>;
 } | null>(null);
 
 export function FileListFocusContextProvider({
@@ -14,16 +20,23 @@ export function FileListFocusContextProvider({
 }: React.PropsWithChildren) {
   const [fileListId, setFileListId] = React.useState<string | null>(null);
   const [selectedIndex, setSelectedIndex] = React.useState<number | null>(null);
-  const [file, setFile] = React.useState<File | null>(null);
+  const [files, setFiles] = React.useState<FileFocus>({
+    current: null,
+    previous: null,
+    next: null,
+  });
 
-  function setFocus(fileListId: string | null, selectedIndex: number | null) {
-    setFileListId(fileListId);
-    setSelectedIndex(selectedIndex);
-  }
+  const setFocus = React.useCallback(
+    (fileListId: string | null, selectedIndex: number | null) => {
+      setFileListId(fileListId);
+      setSelectedIndex(selectedIndex);
+    },
+    [setFileListId, setSelectedIndex],
+  );
 
   return (
     <FileListFocusContext.Provider
-      value={{ fileListId, selectedIndex, setFocus, file, setFile }}
+      value={{ fileListId, selectedIndex, setFocus, files, setFiles }}
     >
       {children}
     </FileListFocusContext.Provider>

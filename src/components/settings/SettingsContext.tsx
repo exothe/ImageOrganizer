@@ -11,6 +11,7 @@ export type SortVariant = z.infer<typeof SortVariant>;
 type Settings = {
   saveAction: SaveAction;
   sortVariant?: SortVariant;
+  showNeighbooringPictures: boolean;
 };
 
 export const SettingsContext = React.createContext<{
@@ -21,6 +22,7 @@ export const SettingsContext = React.createContext<{
 export function SettingsContextProvider({ children }: React.PropsWithChildren) {
   const [settings, setSettings] = React.useState<Settings>({
     saveAction: "copy",
+    showNeighbooringPictures: true,
   });
 
   return (

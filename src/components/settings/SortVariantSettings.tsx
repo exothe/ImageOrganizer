@@ -48,7 +48,7 @@ export function SortVariantParamsForm() {
     return null;
   } else if ("creationdate" in sortVariant) {
     return (
-      <div className="flex gap-2 items-center">
+      <div className="flex gap-2 items-center pl-6">
         <div className="flex gap-1 items-center">
           Format:{" "}
           <Tooltip.Root>
