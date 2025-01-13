@@ -1,42 +1,36 @@
 {
-  "build": {
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build",
-    "frontendDist": "../dist",
-    "devUrl": "http://localhost:1420"
-  },
-  "bundle": {
-    "active": true,
-    "targets": "all",
-    "icon": [
-      "icons/32x32.png",
-      "icons/128x128.png",
-      "icons/128x128@2x.png",
-      "icons/icon.icns",
-      "icons/icon.ico"
-    ]
-  },
-  "productName": "image-organizer",
-  "mainBinaryName": "image-organizer",
-  "version": "0.0.0",
-  "identifier": "com.image-organizer",
-  "plugins": {},
-  "app": {
-    "security": {
-      "assetProtocol": {
-        "scope": ["*/**"],
-        "enable": true
-      },
-      "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost; connect-src ipc: http://ipc.localhost; style-src 'unsafe-inline' 'self'"
+    "build": {
+        "beforeDevCommand": "npm run dev",
+        "beforeBuildCommand": "npm run build",
+        "frontendDist": "../dist",
+        "devUrl": "http://localhost:1420"
     },
-    "windows": [
-      {
-        "title": "image-organizer",
-        "width": 800,
-        "height": 600,
-        "useHttpsScheme": true,
-        "decorations": false
-      }
-    ]
-  }
+    "bundle": {
+        "active": true,
+        "targets": "all",
+        "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
+    },
+    "productName": "image-organizer",
+    "mainBinaryName": "image-organizer",
+    "version": "0.0.0",
+    "identifier": "com.image-organizer",
+    "plugins": {},
+    "app": {
+        "security": {
+            "assetProtocol": {
+                "scope": ["*/**"],
+                "enable": true
+            },
+            "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost; connect-src ipc: http://ipc.localhost; style-src 'unsafe-inline' 'self'"
+        },
+        "windows": [
+            {
+                "title": "image-organizer",
+                "width": 800,
+                "height": 600,
+                "useHttpsScheme": true,
+                "decorations": false
+            }
+        ]
+    }
 }

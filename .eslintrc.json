@@ -1,44 +1,44 @@
 {
-  "env": {
-    "browser": true,
-    "es6": true,
-    "node": true
-  },
-  "extends": [
-    "eslint:recommended",
-    "plugin:@typescript-eslint/recommended",
-    "plugin:react/recommended",
-    "plugin:react-hooks/recommended"
-  ],
-  "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint", "react"],
-  "rules": {
-    "react/react-in-jsx-scope": "off",
-    "@typescript-eslint/no-explicit-any": "off",
-    "react/prop-types": "off",
-    "@typescript-eslint/no-unused-vars": [
-      "warn", // or "error"
-      {
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_",
-        "caughtErrorsIgnorePattern": "^_"
-      }
-    ]
-  },
-  "settings": {
-    "react": {
-      "version": "detect"
+    "env": {
+        "browser": true,
+        "es6": true,
+        "node": true
     },
-    "import/resolver": {
-      "typescript": {} // this loads <rootdir>/tsconfig.json to eslint
-    }
-  },
-  "overrides": [
-    {
-      "files": ["src/**/*.test.ts"],
-      "rules": {
-        "@typescript-eslint/no-unused-vars": "off"
-      }
-    }
-  ]
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "plugin:react/recommended",
+        "plugin:react-hooks/recommended"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "plugins": ["@typescript-eslint", "react"],
+    "rules": {
+        "react/react-in-jsx-scope": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "react/prop-types": "off",
+        "@typescript-eslint/no-unused-vars": [
+            "warn", // or "error"
+            {
+                "argsIgnorePattern": "^_",
+                "varsIgnorePattern": "^_",
+                "caughtErrorsIgnorePattern": "^_"
+            }
+        ]
+    },
+    "settings": {
+        "react": {
+            "version": "detect"
+        },
+        "import/resolver": {
+            "typescript": {} // this loads <rootdir>/tsconfig.json to eslint
+        }
+    },
+    "overrides": [
+        {
+            "files": ["src/**/*.test.ts"],
+            "rules": {
+                "@typescript-eslint/no-unused-vars": "off"
+            }
+        }
+    ]
 }
