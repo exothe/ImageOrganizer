@@ -40,6 +40,28 @@ export function ImageOrganizer() {
   >();
   const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
 
+  const fileTags = React.useMemo(() => {
+    const tags = new Set(acceptedFiles.map((file) => file.tag));
+    return sortBy([...tags].filter((tag) => tag !== undefined) as string[]);
+  }, [acceptedFiles]);
+
+  React.useEffect(() => {
+    setSelectedTags((tags) => tags.filter((tag) => fileTags.includes(tag)));
+  }, [setSelectedTags, fileTags]);
+
+  const filteredAcceptedFiles = React.useMemo(() => {
+    if (selectedTags.length === 0) {
+      return acceptedFiles;
+    } else {
+      const untaggedFilterActive = selectedTags.includes(UNTAGGED_FILTER);
+      return acceptedFiles.filter(
+        (file) =>
+          (file.tag && selectedTags.includes(file.tag)) ||
+          (untaggedFilterActive && file.tag === undefined),
+      );
+    }
+  }, [acceptedFiles, selectedTags]);
+
   async function importImages() {
     const files = await open({
       multiple: true,
@@ -145,39 +167,22 @@ export function ImageOrganizer() {
     setUnreviewedFiles([]);
   }
 
-  function unacceptAllFiles() {
+  function unacceptFiles() {
     setUnreviewedFiles((unreviewedFiles) => [
       ...unreviewedFiles,
-      ...acceptedFiles,
+      ...filteredAcceptedFiles,
     ]);
-    setAcceptedFiles([]);
+    const affectedPaths = new Set(
+      filteredAcceptedFiles.map((file) => file.path),
+    );
+    setAcceptedFiles((acceptedFiles) =>
+      acceptedFiles.filter((file) => !affectedPaths.has(file.path)),
+    );
   }
 
   function clearUnreviewedImages() {
     setUnreviewedFiles([]);
   }
-
-  const fileTags = React.useMemo(() => {
-    const tags = new Set(acceptedFiles.map((file) => file.tag));
-    return sortBy([...tags].filter((tag) => tag !== undefined) as string[]);
-  }, [acceptedFiles]);
-
-  React.useEffect(() => {
-    setSelectedTags((tags) => tags.filter((tag) => fileTags.includes(tag)));
-  }, [setSelectedTags, fileTags]);
-
-  const filteredAcceptedFiles = React.useMemo(() => {
-    if (selectedTags.length === 0) {
-      return acceptedFiles;
-    } else {
-      const untaggedFilterActive = selectedTags.includes(UNTAGGED_FILTER);
-      return acceptedFiles.filter(
-        (file) =>
-          (file.tag && selectedTags.includes(file.tag)) ||
-          (untaggedFilterActive && file.tag === undefined),
-      );
-    }
-  }, [acceptedFiles, selectedTags]);
 
   return (
     <div className="p-2">
@@ -203,7 +208,7 @@ export function ImageOrganizer() {
           </Button>
         </div>
         <div className="flex justify-between w-full">
-          <Button title="Alle Bilder zurücknehmen" onClick={unacceptAllFiles}>
+          <Button title="Alle Bilder zurücknehmen" onClick={unacceptFiles}>
             <ArrowBigLeft />
           </Button>
           <Button onClick={saveImages}>
