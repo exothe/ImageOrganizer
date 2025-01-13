@@ -164,24 +164,28 @@ export function ImageOrganizer() {
                 </SettingsDialog>
             </div>
             <div className="grid grid-cols-2 gap-2 justify-items-center">
-                <div className="flex justify-between w-full">
+                <div className="flex justify-between w-full items-center">
                     <Button onClick={clearUnreviewedImages}>
                         <ArrowBigLeft />
                     </Button>
+                    <div>{unreviewedFiles.length} Bilder</div>
                     <Button onClick={importImages}>
                         Bilder importieren <ArrowDownToLine />
                     </Button>
+                    <div />
                     <Button title="Alle Bilder akzeptieren" onClick={acceptAllFiles}>
                         <ArrowBigRight />
                     </Button>
                 </div>
-                <div className="flex justify-between w-full">
+                <div className="flex justify-between w-full items-center">
                     <Button title="Alle Bilder zurücknehmen" onClick={unacceptFiles}>
                         <ArrowBigLeft />
                     </Button>
+                    <div>{filteredAcceptedFiles.length} Bilder</div>
                     <Button onClick={saveImages}>
                         Bilder speichern <ArrowUpFromLine />
                     </Button>
+                    <div />
                     {fileTags.length > 0 ? (
                         <Combobox
                             options={[
