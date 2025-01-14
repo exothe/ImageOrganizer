@@ -47,6 +47,21 @@ export function SettingsDialog({ children, ...props }: React.PropsWithChildren<D
                         <Option value="false">Nein</Option>
                     </Select>
                 </div>
+                <div className="flex justify-between gap-4 items-center">
+                    <div className="whitespace-nowrap">Dateien löschen, wenn Sie aus der linken Liste gehen?</div>
+                    <Select
+                        value={String(settings.deleteRemovedUnreviewedFiles)}
+                        onValueChange={(value) =>
+                            setSettings((settings) => ({
+                                ...settings,
+                                deleteRemovedUnreviewedFiles: value === 'true',
+                            }))
+                        }
+                    >
+                        <Option value="true">Ja</Option>
+                        <Option value="false">Nein</Option>
+                    </Select>
+                </div>
                 <div className="w-full flex justify-end">
                     <Dialog.Close>
                         <Button>Schließen</Button>

@@ -1,4 +1,4 @@
-import { Button } from '@radix-ui/themes';
+import { Button, Dialog } from '@radix-ui/themes';
 import { FileList } from '../../components/file-list/FileList';
 import { useOrganizerContext } from './organizerContext';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -26,6 +26,7 @@ export function ImageOrganizer() {
 
     const [saveImageResult, setSaveImageResult] = React.useState<SaveImageResult | undefined>();
     const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
+    const [deleteConfirmationOpen, setDeleteConfirmationOpen] = React.useState<boolean>(false);
 
     const fileTags = React.useMemo(() => {
         const tags = new Set(acceptedFiles.map((file) => file.tag));
@@ -104,8 +105,14 @@ export function ImageOrganizer() {
         setAcceptedFiles((acceptedFiles) => [...acceptedFiles, file]);
     }
 
-    function rejectFile(index: number | null) {
+    async function rejectFile(index: number | null) {
         if (index === null) return;
+        if (settings.deleteRemovedUnreviewedFiles) {
+            const result = await api.saveDeleteFiles([unreviewedFiles[index]]);
+            if (!result.success) {
+                return;
+            }
+        }
         setUnreviewedFiles((unreviewedFiles) => [
             ...unreviewedFiles.slice(0, index),
             ...unreviewedFiles.slice(index + 1),
@@ -149,7 +156,22 @@ export function ImageOrganizer() {
     }
 
     function clearUnreviewedImages() {
-        setUnreviewedFiles([]);
+        if (settings.deleteRemovedUnreviewedFiles) {
+            setDeleteConfirmationOpen(true);
+        } else {
+            setUnreviewedFiles([]);
+        }
+    }
+
+    async function saveDeleteUnreviewedImages() {
+        if (settings.deleteRemovedUnreviewedFiles) {
+            const result = await api.saveDeleteFiles(unreviewedFiles);
+            if (result.success) {
+                setUnreviewedFiles([]);
+            } else {
+                setUnreviewedFiles((files) => files.filter((file) => result.failed_files.includes(file.path)));
+            }
+        }
     }
 
     return (
@@ -259,6 +281,27 @@ export function ImageOrganizer() {
                     </ImageDialogContextProvider>
                 </FileListFocusContextProvider>
             </div>
+            <Dialog.Root open={deleteConfirmationOpen} onOpenChange={setDeleteConfirmationOpen}>
+                <Dialog.Content>
+                    <Dialog.Title>Alle Dateien in dieser Liste löschen?</Dialog.Title>
+                    <Dialog.Description>
+                        Die Dateien in dieser Liste werden in den Papierkorb verschoben und anschließend aus dieser
+                        Liste entfernt.
+                    </Dialog.Description>
+                    <div className="w-full flex gap-2 justify-end">
+                        <Dialog.Close>
+                            <Button variant="outline" color="gray">
+                                Abbrechen
+                            </Button>
+                        </Dialog.Close>
+                        <Dialog.Close>
+                            <Button color="red" onClick={saveDeleteUnreviewedImages}>
+                                Löschen
+                            </Button>
+                        </Dialog.Close>
+                    </div>
+                </Dialog.Content>
+            </Dialog.Root>
         </div>
     );
 }

@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { File } from './routes/main-screen/organizerContext';
 import { SaveAction, SortVariant } from './components/settings/SettingsContext';
-import { SaveImageResult } from './model/model';
+import { RemoveFileResult, SaveImageResult } from './model/model';
 
 export const api = {
     async saveFiles(
@@ -15,6 +15,12 @@ export const api = {
             targetDirectory,
             saveAction,
             sortVariant,
+        });
+    },
+
+    async saveDeleteFiles(files: File[]): Promise<RemoveFileResult> {
+        return await invoke('save_delete_files', {
+            files,
         });
     },
 };

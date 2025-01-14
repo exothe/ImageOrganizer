@@ -12,6 +12,7 @@ type Settings = {
     saveAction: SaveAction;
     sortVariant?: SortVariant;
     showNeighbooringPictures: boolean;
+    deleteRemovedUnreviewedFiles: boolean;
 };
 
 export const SettingsContext = React.createContext<{
@@ -23,6 +24,7 @@ export function SettingsContextProvider({ children }: React.PropsWithChildren) {
     const [settings, setSettings] = React.useState<Settings>({
         saveAction: 'copy',
         showNeighbooringPictures: true,
+        deleteRemovedUnreviewedFiles: false,
     });
 
     return <SettingsContext.Provider value={{ settings, setSettings }}>{children}</SettingsContext.Provider>;

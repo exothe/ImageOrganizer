@@ -3,7 +3,7 @@
 
 use tauri::Manager;
 
-mod file_saving;
+mod file_operations;
 
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
@@ -24,7 +24,7 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, file_saving::save_files])
+        .invoke_handler(tauri::generate_handler![greet, file_operations::save_files, file_operations::save_delete_files])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

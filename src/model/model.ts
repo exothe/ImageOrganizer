@@ -4,3 +4,8 @@ export type SaveImageResult = {
     global_errors: string[];
     renamed_files: Record<string, string>;
 };
+
+export type RemoveFileResult = {
+    success: boolean;
+    failed_files: string[];
+};

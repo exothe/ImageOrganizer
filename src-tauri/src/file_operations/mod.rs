@@ -119,3 +119,25 @@ pub async fn save_files(
 
     return result;
 }
+
+#[derive(serde::Serialize)]
+pub struct RemoveResult {
+    success: bool,
+    failed_files: Vec<String>,
+}
+
+#[tauri::command]
+pub async fn save_delete_files(files: Vec<UserFile>) -> RemoveResult {
+    let mut result = RemoveResult {
+        success: true,
+        failed_files: vec![],
+    };
+    for file in files {
+        if let Err(_) = trash::delete(&file.path) {
+            result.failed_files.push(file.path);
+            result.success = false;
+        }
+    }
+
+    return result;
+}
