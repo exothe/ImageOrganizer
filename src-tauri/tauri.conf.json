@@ -28,8 +28,7 @@
                 "title": "image-organizer",
                 "width": 800,
                 "height": 600,
-                "useHttpsScheme": true,
-                "decorations": false
+                "useHttpsScheme": true
             }
         ]
     }
