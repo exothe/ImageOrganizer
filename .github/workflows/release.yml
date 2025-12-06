@@ -4,7 +4,32 @@ on:
     workflow_dispatch:
 
 jobs:
+    bump-version:
+        runs-on: ubuntu-slim
+        permissions:
+            contents: write
+        name: bump-version
+        steps:
+            - uses: actions/checkout@v4
+            - name: Setup git user
+              run: |
+                  git config --global user.name "ImageOrganizerRelease"
+                  git config --global user.email "release@image-organizer.com"
+            - name: setup node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: lts/*
+            - name: setup rust
+              uses: actions-rust-lang/setup-rust-toolchain@v1
+            - name: update apt repository
+              run: sudo apt update
+            - name: install jq and sponge
+              run: sudo apt install -y jq moreutils
+            - name: run-bump-version-script
+              run: ./bump-version.sh patch
+
     release:
+        needs: bump-version
         permissions:
             contents: write
         strategy:
@@ -23,6 +48,8 @@ jobs:
         runs-on: ${{ matrix.platform }}
         steps:
             - uses: actions/checkout@v4
+              with:
+                  ref: master
 
             - name: install dependencies (ubuntu only)
               if: matrix.platform == 'ubuntu-22.04' # This must match the platform value defined above.
