@@ -1,4 +1,4 @@
-import { Button, Dialog } from '@radix-ui/themes';
+import { Dialog } from '@radix-ui/themes';
 import { FileList } from '../../components/file-list/FileList';
 import { useOrganizerContext } from './organizerContext';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -16,6 +16,7 @@ import { sortBy } from 'lodash-es';
 import { Combobox } from '../../components/combobox/Combobox';
 import { Badge } from '../../components/badge/Badge';
 import { api } from '../../api';
+import { Button } from '../../components/button/Button';
 
 const UNTAGGED_FILTER = '__UNTAGGED';
 

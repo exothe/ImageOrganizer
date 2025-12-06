@@ -32,6 +32,7 @@
         "windows": [
             {
                 "title": "image-organizer",
+                "theme": "Light",
                 "width": 800,
                 "height": 600,
                 "useHttpsScheme": true
