@@ -78,6 +78,12 @@ function Updater() {
         }
     }
 
+    const updatePercentageProgress = updateProgress
+        ? updateProgress.contentLength !== 0
+            ? Math.min(Math.round((updateProgress.downloaded / updateProgress.contentLength) * 100), 100)
+            : 0
+        : null;
+
     return (
         <Dialog.Root open={open}>
             <Dialog.Content className="flex flex-col gap-2">
@@ -89,20 +95,8 @@ function Updater() {
                 </Dialog.Description>
                 {updateProgress ? (
                     <div className="flex gap-2 items-center">
-                        <Progress
-                            value={Math.min(
-                                Math.round((updateProgress.downloaded / updateProgress.contentLength) * 100),
-                                100,
-                            )}
-                            color={updateProgress.done ? 'green' : 'indigo'}
-                        />
-                        <div>
-                            {Math.min(
-                                Math.round((updateProgress.downloaded / updateProgress.contentLength) * 100),
-                                100,
-                            )}{' '}
-                            %
-                        </div>
+                        <Progress value={updatePercentageProgress} color={updateProgress.done ? 'green' : 'indigo'} />
+                        <div>{updatePercentageProgress} %</div>
                     </div>
                 ) : (
                     <div className="w-full flex justify-start gap-2">
