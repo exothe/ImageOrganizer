@@ -8,7 +8,14 @@ import { ImageDialog } from '../../components/file-list/ImageDialog';
 import { SaveImageDialog } from '../../components/file-list/SaveImageDialog';
 import { SaveImageResult } from '../../model/model';
 import React from 'react';
-import { ArrowBigLeft, ArrowBigRight, ArrowDownToLine, ArrowUpFromLine, Settings } from 'lucide-react';
+import {
+    ArrowBigLeft,
+    ArrowBigRight,
+    ArrowDownToLine,
+    ArrowUpFromLine,
+    EllipsisVertical,
+    Settings,
+} from 'lucide-react';
 import { getFileExtension } from '../../common/functions';
 import { SettingsDialog } from '../../components/settings/SettingsDialog';
 import { useSettingsContext } from '../../components/settings/SettingsContext';
@@ -16,14 +23,18 @@ import { sortBy } from 'lodash-es';
 import { Combobox } from '../../components/combobox/Combobox';
 import { Badge } from '../../components/badge/Badge';
 import { api } from '../../api';
+import { Switch } from '../../components/switch/Switch';
+import { cn } from '../../components/utils';
+import { Popover, PopoverContent, PopoverTrigger } from '../../components/popover/Popover';
 import { Button } from '../../components/button/Button';
+import { ButtonGroup } from '../../components/button/ButtonGroup';
 
 const UNTAGGED_FILTER = '__UNTAGGED';
 
 export function ImageOrganizer() {
     const { unreviewedFiles, setUnreviewedFiles, acceptedFiles, setAcceptedFiles } = useOrganizerContext();
 
-    const { settings } = useSettingsContext();
+    const { settings, setSettings } = useSettingsContext();
 
     const [saveImageResult, setSaveImageResult] = React.useState<SaveImageResult | undefined>();
     const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
@@ -188,9 +199,44 @@ export function ImageOrganizer() {
             </div>
             <div className="grid grid-cols-2 gap-2 justify-items-center">
                 <div className="flex justify-between w-full items-center">
-                    <Button onClick={clearUnreviewedImages}>
-                        <ArrowBigLeft />
-                    </Button>
+                    <div>
+                        <ButtonGroup>
+                            <Button
+                                variant={settings.deleteRemovedUnreviewedFiles ? 'destructive' : undefined}
+                                onClick={clearUnreviewedImages}
+                                // variant="soft"
+                            >
+                                <ArrowBigLeft />
+                            </Button>
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button variant={settings.deleteRemovedUnreviewedFiles ? 'destructive' : undefined}>
+                                        <EllipsisVertical />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-full">
+                                    <label className="p-2 h-8 flex gap-2 items-center text-sm">
+                                        <span className={cn(settings.deleteRemovedUnreviewedFiles && 'opacity-25')}>
+                                            nicht löschen
+                                        </span>
+                                        <Switch
+                                            className="data-[state=checked]:bg-destructive"
+                                            checked={settings.deleteRemovedUnreviewedFiles}
+                                            onCheckedChange={(checked) =>
+                                                setSettings((settings) => ({
+                                                    ...settings,
+                                                    deleteRemovedUnreviewedFiles: checked,
+                                                }))
+                                            }
+                                        />
+                                        <span className={cn(!settings.deleteRemovedUnreviewedFiles && 'opacity-25')}>
+                                            löschen
+                                        </span>
+                                    </label>
+                                </PopoverContent>
+                            </Popover>
+                        </ButtonGroup>
+                    </div>
                     <div>{unreviewedFiles.length} Bilder</div>
                     <Button onClick={importImages}>
                         Bilder importieren <ArrowDownToLine />
