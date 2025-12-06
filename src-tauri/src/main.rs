@@ -13,6 +13,8 @@ fn greet(name: &str) -> String {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
@@ -24,7 +26,11 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![greet, file_operations::save_files, file_operations::save_delete_files])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            file_operations::save_files,
+            file_operations::save_delete_files
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

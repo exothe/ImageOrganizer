@@ -8,13 +8,19 @@
     "bundle": {
         "active": true,
         "targets": "all",
-        "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
+        "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+        "createUpdaterArtifacts": true
     },
     "productName": "image-organizer",
     "mainBinaryName": "image-organizer",
     "version": "0.0.0",
     "identifier": "com.image-organizer",
-    "plugins": {},
+    "plugins": {
+        "updater": {
+            "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEVCNDcwMzBFNTc4NTFBNTAKUldSUUdvVlhEZ05INjJLYnJyS0Vsd2RoM0ZGL2JReWhtOFJrZFBUdGdmQ3RZVzBsOW5admNuZ2MK",
+            "endpoints": ["https://github.com/exothe/ImageOrganizer/releases/latest/download/latest.json"]
+        }
+    },
     "app": {
         "security": {
             "assetProtocol": {
