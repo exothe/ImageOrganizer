@@ -13,7 +13,7 @@
     },
     "productName": "image-organizer",
     "mainBinaryName": "image-organizer",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "identifier": "com.image-organizer",
     "plugins": {
         "updater": {
