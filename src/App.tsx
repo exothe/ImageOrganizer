@@ -1,11 +1,18 @@
 import './App.css';
-import { SettingsContextProvider } from './components/settings/SettingsContext';
-import { ImageOrganizer } from './routes/main-screen/ImageOrganizer';
-import { OrganizerContextProvider } from './routes/main-screen/organizerContext';
+import { Outlet } from 'react-router-dom';
 import { check, Update } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
 import { Button, Dialog, Progress } from '@radix-ui/themes';
 import React from 'react';
+
+export function App() {
+    return (
+        <>
+            <Outlet />
+            <Updater />
+        </>
+    );
+}
 
 function Updater() {
     const [open, setOpen] = React.useState(false);
@@ -110,16 +117,3 @@ function Updater() {
         </Dialog.Root>
     );
 }
-
-function App() {
-    return (
-        <SettingsContextProvider>
-            <OrganizerContextProvider>
-                <ImageOrganizer />
-                <Updater />
-            </OrganizerContextProvider>
-        </SettingsContextProvider>
-    );
-}
-
-export default App;

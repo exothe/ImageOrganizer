@@ -1,7 +1,7 @@
 import { Button } from '@radix-ui/themes';
 import { Image } from 'lucide-react';
 import { twMerge } from 'tailwind-merge';
-import { useImageDialogContext } from './imageDialogContext';
+import { Link } from 'react-router-dom';
 import { getBasename } from '../../common/functions';
 import { File } from '../../routes/main-screen/organizerContext';
 import { Badge } from '../badge/Badge';
@@ -18,8 +18,6 @@ export function FileListRow({
     onClick: () => void;
     removeTag: () => void;
 }) {
-    const { setOpen } = useImageDialogContext();
-
     return (
         <div
             className={twMerge(
@@ -44,8 +42,10 @@ export function FileListRow({
                 <div></div>
             )}
             <div className="py-0.5">
-                <Button className="cursor-pointer justify-self-end" onClick={() => setOpen(true)}>
-                    <Image />
+                <Button asChild className="cursor-pointer justify-self-end">
+                    <Link to="/image/view">
+                        <Image />
+                    </Link>
                 </Button>
             </div>
         </div>
