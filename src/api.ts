@@ -23,4 +23,8 @@ export const api = {
             files,
         });
     },
+
+    async getOpenWithFiles(): Promise<string[]> {
+        return await invoke('get_open_with_files');
+    },
 };
