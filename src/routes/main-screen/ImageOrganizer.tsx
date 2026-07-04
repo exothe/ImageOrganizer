@@ -22,6 +22,7 @@ import { useSettingsContext } from '../../components/settings/SettingsContext';
 import { sortBy } from 'lodash-es';
 import { Combobox } from '../../components/combobox/Combobox';
 import { Badge } from '../../components/badge/Badge';
+import { getMatches } from '@tauri-apps/plugin-cli';
 import { api } from '../../api';
 import { Switch } from '../../components/switch/Switch';
 import { cn } from '../../components/utils';
@@ -39,6 +40,35 @@ export function ImageOrganizer() {
     const [saveImageResult, setSaveImageResult] = React.useState<SaveImageResult | undefined>();
     const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
     const [deleteConfirmationOpen, setDeleteConfirmationOpen] = React.useState<boolean>(false);
+
+    React.useEffect(() => {
+        const addFiles = (paths: string[]) => {
+            const images = paths.filter((p) => getFileExtension(p) !== undefined);
+            if (images.length === 0) return;
+            setUnreviewedFiles((prev) => [
+                ...prev,
+                ...images.filter((path) => !prev.some((f) => f.path === path)).map((path) => ({ path })),
+            ]);
+        };
+
+        // Windows/Linux: files passed as CLI args
+        getMatches()
+            .then((matches) => {
+                const fileArg = matches.args?.files?.value;
+                const paths =
+                    typeof fileArg === 'string'
+                        ? [fileArg]
+                        : Array.isArray(fileArg)
+                          ? fileArg.filter((item): item is string => typeof item === 'string')
+                          : [];
+                addFiles(paths);
+            })
+            .catch(console.error);
+
+        // macOS: files buffered in Rust state before this listener was registered
+        api.getOpenWithFiles().then(addFiles).catch(console.error);
+
+    }, [setUnreviewedFiles]);
 
     const fileTags = React.useMemo(() => {
         const tags = new Set(acceptedFiles.map((file) => file.tag));
