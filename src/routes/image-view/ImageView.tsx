@@ -205,15 +205,38 @@ function PreviewStrip() {
 }
 
 export function ImageView() {
-    const { files } = useFileListFocusContext();
+    const { files, fileListId } = useFileListFocusContext();
     const { settings, setSettings } = useSettingsContext();
     const navigate = useNavigate();
+    const [swipeGhost, setSwipeGhost] = React.useState<{ path: string; direction: 'left' | 'right' } | null>(null);
+
+    // needed in useEffect. If we use state there directly, we would need to add it to deps. This would reinitialize the
+    // event listener on every keypress
+    const currentPathRef = React.useRef<string | null>(null);
+    currentPathRef.current = files.current?.path ?? null;
 
     React.useEffect(() => {
         if (files.current === null) {
             navigate('/image/list', { replace: true });
         }
     }, [files, navigate]);
+
+    // Mirrors the accept/reject shortcuts in ImageRoute: show the outgoing image tilting away and fading out.
+    React.useEffect(() => {
+        const onKeyDown = (event: KeyboardEvent) => {
+            const path = currentPathRef.current;
+            if (path === null) {
+                return;
+            }
+            if (event.key === 'ArrowLeft') {
+                setSwipeGhost({ path, direction: 'left' });
+            } else if (event.key === 'ArrowRight' && fileListId === 'unreviewedFiles') {
+                setSwipeGhost({ path, direction: 'right' });
+            }
+        };
+        window.addEventListener('keydown', onKeyDown);
+        return () => window.removeEventListener('keydown', onKeyDown);
+    }, [fileListId]);
 
     if (files.current === null) {
         return <div>Es gibt kein Bild mehr, was angezeigt werden könnte.</div>;
@@ -245,7 +268,25 @@ export function ImageView() {
             </div>
             <div className="flex flex-1 min-h-0 justify-center items-center gap-2 px-2">
                 {settings.showNeighbooringPictures && <PreviewStrip />}
-                <ZoomableImage path={files.current.path} />
+                <div className="relative flex-1 h-full flex">
+                    <ZoomableImage path={files.current.path} />
+                    {swipeGhost && (
+                        <div
+                            key={swipeGhost.path}
+                            className={cn(
+                                'absolute inset-0 flex items-center justify-center pointer-events-none',
+                                swipeGhost.direction === 'left' ? 'animate-swipe-out-left' : 'animate-swipe-out-right',
+                            )}
+                            onAnimationEnd={() => setSwipeGhost(null)}
+                        >
+                            <img
+                                src={convertFileSrc(swipeGhost.path)}
+                                draggable={false}
+                                style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                            />
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

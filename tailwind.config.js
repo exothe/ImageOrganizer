@@ -45,6 +45,18 @@ export default {
                 },
                 linkForeground: 'hsl(var(--link-foreground))',
             },
+            keyframes: {
+                'swipe-out-left': {
+                    to: { transform: 'translateX(-40%) rotate(-12deg)', opacity: '0' },
+                },
+                'swipe-out-right': {
+                    to: { transform: 'translateX(40%) rotate(12deg)', opacity: '0' },
+                },
+            },
+            animation: {
+                'swipe-out-left': 'swipe-out-left 0.3s ease-out forwards',
+                'swipe-out-right': 'swipe-out-right 0.3s ease-out forwards',
+            },
         },
     },
     plugins: [],
