@@ -8,6 +8,7 @@ import { Switch } from '../../components/switch/Switch';
 import { cn } from '../../components/utils';
 import { useNavigate } from 'react-router-dom';
 import React from 'react';
+import { useImageRoute } from '../image/ImageRoute';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 10;
@@ -147,6 +148,62 @@ function ZoomableImage({ path }: { path: string }) {
     );
 }
 
+const PREVIEW_HEIGHT = 96;
+const PREVIEW_GAP = 8;
+
+function PreviewStrip() {
+    const { fileListId, selectedIndex } = useFileListFocusContext();
+    const { unreviewedFiles, filteredAcceptedFiles, select } = useImageRoute();
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const [visibleCount, setVisibleCount] = React.useState(0);
+
+    React.useEffect(() => {
+        const container = containerRef.current;
+        if (!container) {
+            return;
+        }
+        const observer = new ResizeObserver(([entry]) => {
+            const height = entry.contentRect.height;
+            setVisibleCount(Math.max(1, Math.floor((height + PREVIEW_GAP) / (PREVIEW_HEIGHT + PREVIEW_GAP))));
+        });
+        observer.observe(container);
+        return () => observer.disconnect();
+    }, []);
+
+    const list = fileListId === 'unreviewedFiles' ? unreviewedFiles : filteredAcceptedFiles;
+
+    let previews: { file: { path: string }; index: number }[] = [];
+    if (selectedIndex !== null && visibleCount > 0) {
+        const start = Math.max(
+            0,
+            Math.min(selectedIndex - Math.floor((visibleCount - 1) / 2), list.length - visibleCount),
+        );
+        previews = list.slice(start, start + visibleCount).map((file, i) => ({ file, index: start + i }));
+    }
+
+    return (
+        <div ref={containerRef} className="h-full w-[12vw] flex flex-col items-center justify-center gap-2">
+            {previews.map(({ file, index }) => (
+                <button
+                    key={file.path}
+                    onClick={() => select(fileListId, index)}
+                    className={cn(
+                        'w-full flex items-center justify-center rounded p-1',
+                        index === selectedIndex && 'ring-2 ring-primary',
+                    )}
+                    style={{ height: PREVIEW_HEIGHT }}
+                >
+                    <img
+                        src={convertFileSrc(file.path)}
+                        draggable={false}
+                        style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                    />
+                </button>
+            ))}
+        </div>
+    );
+}
+
 export function ImageView() {
     const { files } = useFileListFocusContext();
     const { settings, setSettings } = useSettingsContext();
@@ -187,39 +244,8 @@ export function ImageView() {
                 </div>
             </div>
             <div className="flex flex-1 min-h-0 justify-center items-center gap-2 px-2">
-                {settings.showNeighbooringPictures && files.previous && (
-                    <div className="h-[12vh] w-[12vw] flex items-center justify-center">
-                        <img
-                            ref={(imgRef) => {
-                                if (imgRef && files.previous) {
-                                    imgRef.src = convertFileSrc(files.previous.path);
-                                }
-                            }}
-                            style={{
-                                maxHeight: '100%',
-                                maxWidth: '100%',
-                                objectFit: 'contain',
-                            }}
-                        />
-                    </div>
-                )}
+                {settings.showNeighbooringPictures && <PreviewStrip />}
                 <ZoomableImage path={files.current.path} />
-                {settings.showNeighbooringPictures && files.next && (
-                    <div className="h-[12vh] w-[12vw] flex items-center justify-center">
-                        <img
-                            ref={(imgRef) => {
-                                if (imgRef && files.next) {
-                                    imgRef.src = convertFileSrc(files.next.path);
-                                }
-                            }}
-                            style={{
-                                maxHeight: '100%',
-                                maxWidth: '100%',
-                                objectFit: 'contain',
-                            }}
-                        />
-                    </div>
-                )}
             </div>
         </div>
     );
