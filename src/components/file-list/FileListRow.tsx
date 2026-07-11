@@ -10,11 +10,13 @@ import * as Tooltip from '@radix-ui/react-tooltip';
 export function FileListRow({
     file,
     selected,
+    marked,
     onClick,
     removeTag,
 }: {
     file: File;
     selected: boolean;
+    marked: boolean;
     onClick: () => void;
     removeTag: () => void;
 }) {
@@ -22,7 +24,9 @@ export function FileListRow({
         <div
             className={twMerge(
                 'bg-gray-100 hover:bg-gray-200 grid grid-cols-[10fr_1fr_50px] gap-2 items-center',
+                marked && 'bg-gray-400 hover:bg-gray-500',
                 selected && 'bg-blue-400 hover:bg-blue-500',
+                marked && selected && 'bg-blue-600 hover:bg-blue-700',
             )}
             onClick={onClick}
         >

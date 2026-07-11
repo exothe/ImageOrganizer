@@ -4,6 +4,8 @@ interface OrganizerContext {
     setUnreviewedFiles: React.Dispatch<React.SetStateAction<File[]>>;
     acceptedFiles: File[];
     setAcceptedFiles: React.Dispatch<React.SetStateAction<File[]>>;
+    markedPaths: string[];
+    setMarkedPaths: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
 export const OrganizerContext = React.createContext<OrganizerContext | null>(null);
@@ -16,6 +18,7 @@ export type File = {
 export function OrganizerContextProvider({ children }: React.PropsWithChildren) {
     const [unreviewedFiles, setUnreviewedFiles] = React.useState<File[]>([]);
     const [acceptedFiles, setAcceptedFiles] = React.useState<File[]>([]);
+    const [markedPaths, setMarkedPaths] = React.useState<string[]>([]);
 
     return (
         <OrganizerContext.Provider
@@ -24,6 +27,8 @@ export function OrganizerContextProvider({ children }: React.PropsWithChildren) 
                 setUnreviewedFiles,
                 acceptedFiles,
                 setAcceptedFiles,
+                markedPaths,
+                setMarkedPaths,
             }}
         >
             {children}

@@ -11,6 +11,7 @@ import { FileListFocusContextProvider } from './components/file-list/fileListFoc
 import { ImageRoute } from './routes/image/ImageRoute';
 import { ImageList } from './routes/image/ImageList';
 import { ImageView } from './routes/image-view/ImageView';
+import { ImageCompare } from './routes/image-compare/ImageCompare';
 
 const router = createHashRouter([
     {
@@ -32,6 +33,10 @@ const router = createHashRouter([
                     {
                         path: 'view',
                         element: <ImageView />,
+                    },
+                    {
+                        path: 'compare',
+                        element: <ImageCompare />,
                     },
                 ],
             },

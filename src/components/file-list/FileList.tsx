@@ -1,6 +1,6 @@
 import { FileListRow } from './FileListRow';
 import { useFileListFocusContext } from './fileListFocusContext';
-import { File } from '../../routes/main-screen/organizerContext';
+import { File, useOrganizerContext } from '../../routes/main-screen/organizerContext';
 
 export function FileList({
     files,
@@ -14,6 +14,7 @@ export function FileList({
     onSelect: (index: number) => void;
 }) {
     const { fileListId, selectedIndex } = useFileListFocusContext();
+    const { markedPaths } = useOrganizerContext();
     const isActive = id === fileListId;
 
     return (
@@ -23,6 +24,7 @@ export function FileList({
                     key={file.path}
                     file={file}
                     selected={isActive && i === selectedIndex}
+                    marked={markedPaths.includes(file.path)}
                     onClick={() => onSelect(i)}
                     removeTag={() => removeTag(i)}
                 />

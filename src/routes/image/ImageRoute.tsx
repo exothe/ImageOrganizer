@@ -2,7 +2,7 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { getMatches } from '@tauri-apps/plugin-cli';
 import { sortBy } from 'lodash-es';
 import React from 'react';
-import { Outlet, useOutletContext } from 'react-router-dom';
+import { Outlet, useLocation, useOutletContext } from 'react-router-dom';
 import { useKeyPressEvent } from 'react-use';
 import { api } from '../../api';
 import { getFileExtension } from '../../common/functions';
@@ -31,6 +31,14 @@ export interface ImageRouteContextValue {
     tagFile: (mode: 'unreviewed' | 'accepted', index: number | null, tag?: string) => void;
     filteredIndexToUnfiltered: (index: number | null) => number | null;
     select: (id: string | null, index: number | null) => void;
+    markedPaths: string[];
+    markedFiles: MarkedFile[];
+    decideMarkedFile: (path: string, direction: 'left' | 'right') => void;
+}
+
+export interface MarkedFile {
+    file: File;
+    list: 'unreviewed' | 'accepted';
 }
 
 export function useImageRoute() {
@@ -38,9 +46,13 @@ export function useImageRoute() {
 }
 
 export function ImageRoute() {
-    const { unreviewedFiles, setUnreviewedFiles, acceptedFiles, setAcceptedFiles } = useOrganizerContext();
+    const { unreviewedFiles, setUnreviewedFiles, acceptedFiles, setAcceptedFiles, markedPaths, setMarkedPaths } =
+        useOrganizerContext();
     const { settings } = useSettingsContext();
     const { fileListId, selectedIndex, setFocus, setFiles } = useFileListFocusContext();
+    const location = useLocation();
+    // the comparison view has its own per-image controls; the list shortcuts must not fire there
+    const onComparePage = location.pathname.startsWith('/image/compare');
 
     const [saveImageResult, setSaveImageResult] = React.useState<SaveImageResult | undefined>();
     const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
@@ -152,17 +164,18 @@ export function ImageRoute() {
     }
 
     async function rejectFile(index: number | null) {
-        if (index === null) return;
+        if (index === null) return false;
         if (settings.deleteRemovedUnreviewedFiles) {
             const result = await api.saveDeleteFiles([unreviewedFiles[index]]);
             if (!result.success) {
-                return;
+                return false;
             }
         }
         setUnreviewedFiles((unreviewedFiles) => [
             ...unreviewedFiles.slice(0, index),
             ...unreviewedFiles.slice(index + 1),
         ]);
+        return true;
     }
 
     function unacceptFile(index: number | null) {
@@ -220,6 +233,50 @@ export function ImageRoute() {
         }
     }
 
+    // --- Marked files (spacebar) for the comparison view ---
+
+    // files can leave the lists in many ways (save, clear, reject, ...) — drop stale marks centrally
+    React.useEffect(() => {
+        setMarkedPaths((prev) => {
+            const next = prev.filter(
+                (path) => unreviewedFiles.some((f) => f.path === path) || acceptedFiles.some((f) => f.path === path),
+            );
+            return next.length === prev.length ? prev : next;
+        });
+    }, [unreviewedFiles, acceptedFiles, setMarkedPaths]);
+
+    const markedFiles = React.useMemo<MarkedFile[]>(() => {
+        const marked = new Set(markedPaths);
+        return [
+            ...unreviewedFiles
+                .filter((file) => marked.has(file.path))
+                .map((file) => ({ file, list: 'unreviewed' as const })),
+            ...acceptedFiles
+                .filter((file) => marked.has(file.path))
+                .map((file) => ({ file, list: 'accepted' as const })),
+        ];
+    }, [markedPaths, unreviewedFiles, acceptedFiles]);
+
+    function toggleMarked(path: string) {
+        setMarkedPaths((prev) => (prev.includes(path) ? prev.filter((p) => p !== path) : [...prev, path]));
+    }
+
+    async function decideMarkedFile(path: string, direction: 'left' | 'right') {
+        const unreviewedIndex = unreviewedFiles.findIndex((file) => file.path === path);
+        if (unreviewedIndex !== -1) {
+            if (direction === 'left') {
+                if (!(await rejectFile(unreviewedIndex))) return;
+            } else {
+                acceptFile(unreviewedIndex);
+            }
+        } else {
+            const acceptedIndex = acceptedFiles.findIndex((file) => file.path === path);
+            if (acceptedIndex === -1 || direction === 'right') return;
+            unacceptFile(acceptedIndex);
+        }
+        setMarkedPaths((prev) => prev.filter((p) => p !== path));
+    }
+
     // --- Selection + keyboard shortcuts (shared by both child routes) ---
 
     const filesForId = React.useCallback(
@@ -265,10 +322,16 @@ export function ImageRoute() {
         select(fileListId, Math.min(Math.max(selectedIndex + delta, 0), arr.length - 1));
     }
 
-    useKeyPressEvent('ArrowDown', () => move(1));
-    useKeyPressEvent('ArrowUp', () => move(-1));
+    useKeyPressEvent('ArrowDown', () => {
+        if (onComparePage) return;
+        move(1);
+    });
+    useKeyPressEvent('ArrowUp', () => {
+        if (onComparePage) return;
+        move(-1);
+    });
     useKeyPressEvent('ArrowLeft', () => {
-        if (selectedIndex === null) return;
+        if (onComparePage || selectedIndex === null) return;
         if (fileListId === 'unreviewedFiles') {
             rejectFile(selectedIndex);
         } else if (fileListId === 'acceptedFiles') {
@@ -276,6 +339,7 @@ export function ImageRoute() {
         }
     });
     useKeyPressEvent('ArrowRight', () => {
+        if (onComparePage) return;
         if (fileListId === 'unreviewedFiles') {
             acceptFile(selectedIndex);
         }
@@ -283,7 +347,7 @@ export function ImageRoute() {
     useKeyPressEvent(
         (e) => /^[a-z0-9]$/.test(e.key),
         (e) => {
-            if (selectedIndex === null) return;
+            if (onComparePage || selectedIndex === null) return;
             if (fileListId === 'unreviewedFiles') {
                 tagFile('unreviewed', selectedIndex, e.key);
                 acceptFile(selectedIndex);
@@ -292,6 +356,20 @@ export function ImageRoute() {
             }
         },
     );
+    useKeyPressEvent(' ', (e) => {
+        if (onComparePage || fileListId === null || selectedIndex === null) return;
+        // don't hijack space when a control is focused (buttons, switches, ...)
+        if (
+            e.target instanceof HTMLElement &&
+            e.target.closest('button, input, textarea, select, [role="switch"], [role="checkbox"]')
+        ) {
+            return;
+        }
+        const file = filesForId(fileListId)[selectedIndex];
+        if (!file) return;
+        e.preventDefault();
+        toggleMarked(file.path);
+    });
 
     const context: ImageRouteContextValue = {
         unreviewedFiles,
@@ -311,6 +389,9 @@ export function ImageRoute() {
         tagFile,
         filteredIndexToUnfiltered,
         select,
+        markedPaths,
+        markedFiles,
+        decideMarkedFile,
     };
 
     return <Outlet context={context} />;

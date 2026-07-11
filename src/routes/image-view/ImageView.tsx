@@ -1,159 +1,22 @@
 import { Button } from '@radix-ui/themes';
 import { useFileListFocusContext } from '../../components/file-list/fileListFocusContext';
-import { X } from 'lucide-react';
+import { Columns2, X } from 'lucide-react';
 import { getBasename } from '../../common/functions';
 import { convertFileSrc } from '@tauri-apps/api/core';
 import { useSettingsContext } from '../../components/settings/SettingsContext';
 import { Switch } from '../../components/switch/Switch';
+import { ZoomableImage } from '../../components/zoomable-image/ZoomableImage';
 import { cn } from '../../components/utils';
 import { useNavigate } from 'react-router-dom';
 import React from 'react';
 import { useImageRoute } from '../image/ImageRoute';
-
-const MIN_SCALE = 1;
-const MAX_SCALE = 10;
-
-interface ZoomTransform {
-    scale: number;
-    x: number;
-    y: number;
-}
-
-const initialTransform: ZoomTransform = { scale: 1, x: 0, y: 0 };
-
-function ZoomableImage({ path }: { path: string }) {
-    const containerRef = React.useRef<HTMLDivElement>(null);
-    const [transform, setTransform] = React.useState<ZoomTransform>(initialTransform);
-    const transformRef = React.useRef(transform);
-    transformRef.current = transform;
-    const gestureStartScale = React.useRef(1);
-    const dragStart = React.useRef<{ pointerX: number; pointerY: number; x: number; y: number } | null>(null);
-
-    React.useEffect(() => {
-        setTransform(initialTransform);
-    }, [path]);
-
-    const zoomTo = React.useCallback((targetScale: number, clientX: number, clientY: number) => {
-        const container = containerRef.current;
-        if (!container) {
-            return;
-        }
-        const rect = container.getBoundingClientRect();
-        setTransform((prev) => {
-            const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, targetScale));
-            if (scale === 1) {
-                return initialTransform;
-            }
-            // cursor position relative to container center (= transform origin)
-            const cx = clientX - rect.left - rect.width / 2;
-            const cy = clientY - rect.top - rect.height / 2;
-            const ratio = scale / prev.scale;
-            return { scale, x: cx - (cx - prev.x) * ratio, y: cy - (cy - prev.y) * ratio };
-        });
-    }, []);
-
-    React.useEffect(() => {
-        const container = containerRef.current;
-        if (!container) {
-            return;
-        }
-
-        // native listeners: React attaches wheel as passive, preventDefault would be ignored
-        const onWheel = (event: WheelEvent) => {
-            event.preventDefault();
-            // ctrlKey is set for pinch gestures translated to wheel events
-            const sensitivity = event.ctrlKey ? 0.01 : 0.002;
-            const factor = Math.exp(-event.deltaY * sensitivity);
-            zoomTo(transformRef.current.scale * factor, event.clientX, event.clientY);
-        };
-
-        // WKWebView (macOS) delivers trackpad pinch as non-standard gesture events
-        const onGestureStart = (event: Event) => {
-            event.preventDefault();
-            gestureStartScale.current = transformRef.current.scale;
-        };
-        const onGestureChange = (event: Event) => {
-            event.preventDefault();
-            const gesture = event as Event & { scale: number; clientX: number; clientY: number };
-            zoomTo(gestureStartScale.current * gesture.scale, gesture.clientX, gesture.clientY);
-        };
-
-        container.addEventListener('wheel', onWheel, { passive: false });
-        container.addEventListener('gesturestart', onGestureStart);
-        container.addEventListener('gesturechange', onGestureChange);
-        return () => {
-            container.removeEventListener('wheel', onWheel);
-            container.removeEventListener('gesturestart', onGestureStart);
-            container.removeEventListener('gesturechange', onGestureChange);
-        };
-    }, [zoomTo]);
-
-    const onPointerDown = (event: React.PointerEvent) => {
-        if (transformRef.current.scale === 1) {
-            return;
-        }
-        event.currentTarget.setPointerCapture(event.pointerId);
-        dragStart.current = {
-            pointerX: event.clientX,
-            pointerY: event.clientY,
-            x: transformRef.current.x,
-            y: transformRef.current.y,
-        };
-    };
-
-    const onPointerMove = (event: React.PointerEvent) => {
-        const start = dragStart.current;
-        if (!start) {
-            return;
-        }
-        setTransform((prev) => ({
-            ...prev,
-            x: start.x + event.clientX - start.pointerX,
-            y: start.y + event.clientY - start.pointerY,
-        }));
-    };
-
-    const onPointerUp = () => {
-        dragStart.current = null;
-    };
-
-    return (
-        <div
-            ref={containerRef}
-            className={cn(
-                'flex-1 h-full flex items-center justify-center overflow-hidden',
-                transform.scale > 1 && 'cursor-grab',
-            )}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
-            onDoubleClick={() => setTransform(initialTransform)}
-        >
-            <img
-                src={convertFileSrc(path)}
-                draggable={false}
-                style={{
-                    maxHeight: '100%',
-                    maxWidth: '100%',
-                    objectFit: 'contain',
-                    transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
-                    transformOrigin: 'center',
-                    // own compositing layer — without it WKWebView repaints on every pan step and
-                    // leaves stale-pixel artifacts behind the image
-                    willChange: 'transform',
-                }}
-            />
-        </div>
-    );
-}
 
 const PREVIEW_HEIGHT = 96;
 const PREVIEW_GAP = 8;
 
 function PreviewStrip() {
     const { fileListId, selectedIndex } = useFileListFocusContext();
-    const { unreviewedFiles, filteredAcceptedFiles, select } = useImageRoute();
+    const { unreviewedFiles, filteredAcceptedFiles, select, markedPaths } = useImageRoute();
     const containerRef = React.useRef<HTMLDivElement>(null);
     const [visibleCount, setVisibleCount] = React.useState(0);
 
@@ -189,6 +52,7 @@ function PreviewStrip() {
                     onClick={() => select(fileListId, index)}
                     className={cn(
                         'w-full flex items-center justify-center rounded p-1',
+                        markedPaths.includes(file.path) && 'bg-gray-300',
                         index === selectedIndex && 'ring-2 ring-primary',
                     )}
                     style={{ height: PREVIEW_HEIGHT }}
@@ -207,6 +71,7 @@ function PreviewStrip() {
 export function ImageView() {
     const { files, fileListId } = useFileListFocusContext();
     const { settings, setSettings } = useSettingsContext();
+    const { markedPaths } = useImageRoute();
     const navigate = useNavigate();
     const [swipeGhost, setSwipeGhost] = React.useState<{ path: string; direction: 'left' | 'right' } | null>(null);
 
@@ -248,6 +113,11 @@ export function ImageView() {
                 <span></span>
                 <h1 className="text-xl">{getBasename(files.current.path)}</h1>
                 <div className="flex gap-2 items-center">
+                    {markedPaths.length > 0 && (
+                        <Button variant="outline" onClick={() => navigate('/image/compare')}>
+                            <Columns2 size={16} /> Vergleichen ({markedPaths.length})
+                        </Button>
+                    )}
                     <label className="p-2 h-8 flex gap-2 items-center text-sm border rounded-lg">
                         <span className={cn(settings.showNeighbooringPictures && 'opacity-25')}>ohne Vorschau</span>
                         <Switch
