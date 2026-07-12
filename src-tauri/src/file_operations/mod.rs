@@ -126,6 +126,17 @@ pub struct RemoveResult {
     failed_files: Vec<String>,
 }
 
+// Opens a file in an external program (e.g. GIMP); without a program, the system default is used.
+// On macOS the program is resolved as an application name (`open -a`), elsewhere as a command.
+#[tauri::command]
+pub async fn open_file_with(path: String, program: Option<String>) -> Result<(), String> {
+    let result = match program.as_deref().map(str::trim) {
+        Some(program) if !program.is_empty() => open::with_detached(&path, program),
+        _ => open::that_detached(&path),
+    };
+    result.map_err(|e| format!("Programm konnte nicht gestartet werden: {}", e))
+}
+
 #[tauri::command]
 pub async fn save_delete_files(files: Vec<UserFile>) -> RemoveResult {
     let mut result = RemoveResult {

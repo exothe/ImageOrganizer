@@ -18,10 +18,23 @@ interface ZoomableImageProps {
     // controlled mode: several images share one transform (e.g. comparison view)
     transform?: ZoomTransform;
     onTransformChange?: React.Dispatch<React.SetStateAction<ZoomTransform>>;
+    // rendered on top of the image, in image space: children positioned in % follow zoom/pan
+    overlay?: React.ReactNode;
 }
 
-export function ZoomableImage({ path, transform: controlledTransform, onTransformChange }: ZoomableImageProps) {
+export function ZoomableImage({
+    path,
+    transform: controlledTransform,
+    onTransformChange,
+    overlay,
+}: ZoomableImageProps) {
     const containerRef = React.useRef<HTMLDivElement>(null);
+    const imgRef = React.useRef<HTMLImageElement>(null);
+    // layout box of the img element (the painted image, since max-width/max-height keep its ratio),
+    // measured relative to the container so the overlay can mirror it exactly
+    const [imgBox, setImgBox] = React.useState<{ left: number; top: number; width: number; height: number } | null>(
+        null,
+    );
     const [internalTransform, setInternalTransform] = React.useState<ZoomTransform>(initialTransform);
     const controlled = controlledTransform !== undefined && onTransformChange !== undefined;
     const transform = controlled ? controlledTransform : internalTransform;
@@ -36,6 +49,25 @@ export function ZoomableImage({ path, transform: controlledTransform, onTransfor
             setInternalTransform(initialTransform);
         }
     }, [path, controlled]);
+
+    // keep the overlay box in sync with the img layout (load, window/grid resizes)
+    const hasOverlay = overlay !== undefined;
+    React.useLayoutEffect(() => {
+        if (!hasOverlay) {
+            return;
+        }
+        const img = imgRef.current;
+        if (!img) {
+            return;
+        }
+        const update = () => {
+            setImgBox({ left: img.offsetLeft, top: img.offsetTop, width: img.offsetWidth, height: img.offsetHeight });
+        };
+        update();
+        const observer = new ResizeObserver(update);
+        observer.observe(img);
+        return () => observer.disconnect();
+    }, [hasOverlay, path]);
 
     const zoomTo = React.useCallback(
         (targetScale: number, clientX: number, clientY: number) => {
@@ -128,7 +160,7 @@ export function ZoomableImage({ path, transform: controlledTransform, onTransfor
         <div
             ref={containerRef}
             className={cn(
-                'flex-1 h-full flex items-center justify-center overflow-hidden',
+                'relative flex-1 h-full flex items-center justify-center overflow-hidden',
                 transform.scale > 1 && 'cursor-grab',
             )}
             onPointerDown={onPointerDown}
@@ -138,6 +170,7 @@ export function ZoomableImage({ path, transform: controlledTransform, onTransfor
             onDoubleClick={() => setTransform(initialTransform)}
         >
             <img
+                ref={imgRef}
                 src={convertFileSrc(path)}
                 draggable={false}
                 style={{
@@ -151,6 +184,24 @@ export function ZoomableImage({ path, transform: controlledTransform, onTransfor
                     willChange: 'transform',
                 }}
             />
+            {overlay !== undefined && imgBox !== null && (
+                // mirrors the img box and transform, so overlay children position in % of the image
+                <div
+                    style={{
+                        position: 'absolute',
+                        left: imgBox.left,
+                        top: imgBox.top,
+                        width: imgBox.width,
+                        height: imgBox.height,
+                        transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+                        transformOrigin: 'center',
+                        willChange: 'transform',
+                        pointerEvents: 'none',
+                    }}
+                >
+                    {overlay}
+                </div>
+            )}
         </div>
     );
 }

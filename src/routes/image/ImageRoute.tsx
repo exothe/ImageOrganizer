@@ -34,6 +34,7 @@ export interface ImageRouteContextValue {
     markedPaths: string[];
     markedFiles: MarkedFile[];
     decideMarkedFile: (path: string, direction: 'left' | 'right') => void;
+    addMergedFile: (path: string) => void;
 }
 
 export interface MarkedFile {
@@ -277,6 +278,13 @@ export function ImageRoute() {
         setMarkedPaths((prev) => prev.filter((p) => p !== path));
     }
 
+    // A freshly merged photo joins the unreviewed list (first position, so it leads the compare
+    // grid) and is marked in the same render batch — the stale-mark cleanup sees both updates.
+    function addMergedFile(path: string) {
+        setUnreviewedFiles((prev) => (prev.some((f) => f.path === path) ? prev : [{ path }, ...prev]));
+        setMarkedPaths((prev) => (prev.includes(path) ? prev : [...prev, path]));
+    }
+
     // --- Selection + keyboard shortcuts (shared by both child routes) ---
 
     const filesForId = React.useCallback(
@@ -392,6 +400,7 @@ export function ImageRoute() {
         markedPaths,
         markedFiles,
         decideMarkedFile,
+        addMergedFile,
     };
 
     return <Outlet context={context} />;

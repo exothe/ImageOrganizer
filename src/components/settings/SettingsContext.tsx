@@ -13,6 +13,8 @@ type Settings = {
     sortVariant?: SortVariant;
     showNeighbooringPictures: boolean;
     deleteRemovedUnreviewedFiles: boolean;
+    // program for "open image externally" (macOS: app name, else command); empty = hide the menu entry
+    externalImageEditor: string;
 };
 
 export const SettingsContext = React.createContext<{
@@ -25,6 +27,7 @@ export function SettingsContextProvider({ children }: React.PropsWithChildren) {
         saveAction: 'copy',
         showNeighbooringPictures: true,
         deleteRemovedUnreviewedFiles: false,
+        externalImageEditor: 'GIMP',
     });
 
     return <SettingsContext.Provider value={{ settings, setSettings }}>{children}</SettingsContext.Provider>;

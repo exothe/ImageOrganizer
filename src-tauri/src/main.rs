@@ -4,6 +4,7 @@
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
 
+mod face_merge;
 mod file_operations;
 
 #[tauri::command]
@@ -23,6 +24,7 @@ fn get_open_with_files(state: tauri::State<OpenWithFiles>) -> Vec<String> {
 fn main() {
     tauri::Builder::default()
         .manage(OpenWithFiles(Mutex::new(vec![])))
+        .manage(face_merge::FaceMergeState::default())
         .plugin(tauri_plugin_cli::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -38,7 +40,10 @@ fn main() {
             greet,
             get_open_with_files,
             file_operations::save_files,
-            file_operations::save_delete_files
+            file_operations::save_delete_files,
+            file_operations::open_file_with,
+            face_merge::detect_merge_faces,
+            face_merge::merge_faces
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

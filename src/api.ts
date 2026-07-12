@@ -1,7 +1,7 @@
 import { invoke } from '@tauri-apps/api/core';
 import { File } from './routes/main-screen/organizerContext';
 import { SaveAction, SortVariant } from './components/settings/SettingsContext';
-import { RemoveFileResult, SaveImageResult } from './model/model';
+import { DetectFacesResult, MergeFacesResult, RemoveFileResult, SaveImageResult } from './model/model';
 
 export const api = {
     async saveFiles(
@@ -26,5 +26,17 @@ export const api = {
 
     async getOpenWithFiles(): Promise<string[]> {
         return await invoke('get_open_with_files');
+    },
+
+    async openFileWith(path: string, program?: string): Promise<void> {
+        return await invoke('open_file_with', { path, program });
+    },
+
+    async detectMergeFaces(paths: string[]): Promise<DetectFacesResult> {
+        return await invoke('detect_merge_faces', { paths });
+    },
+
+    async mergeFaces(sessionId: number, selections: Record<number, string>): Promise<MergeFacesResult> {
+        return await invoke('merge_faces', { sessionId, selections });
     },
 };

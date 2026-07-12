@@ -10,6 +10,7 @@ import { cn } from '../../components/utils';
 import { useNavigate } from 'react-router-dom';
 import React from 'react';
 import { useImageRoute } from '../image/ImageRoute';
+import { ImageContextMenu } from '../../components/image-context-menu/ImageContextMenu';
 
 const PREVIEW_HEIGHT = 96;
 const PREVIEW_GAP = 8;
@@ -47,22 +48,23 @@ function PreviewStrip() {
     return (
         <div ref={containerRef} className="h-full w-[12vw] flex flex-col items-center justify-center gap-2">
             {previews.map(({ file, index }) => (
-                <button
-                    key={file.path}
-                    onClick={() => select(fileListId, index)}
-                    className={cn(
-                        'w-full flex items-center justify-center rounded p-1',
-                        markedPaths.includes(file.path) && 'bg-gray-300',
-                        index === selectedIndex && 'ring-2 ring-primary',
-                    )}
-                    style={{ height: PREVIEW_HEIGHT }}
-                >
-                    <img
-                        src={convertFileSrc(file.path)}
-                        draggable={false}
-                        style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
-                    />
-                </button>
+                <ImageContextMenu key={file.path} path={file.path}>
+                    <button
+                        onClick={() => select(fileListId, index)}
+                        className={cn(
+                            'w-full flex items-center justify-center rounded p-1',
+                            markedPaths.includes(file.path) && 'bg-gray-300',
+                            index === selectedIndex && 'ring-2 ring-primary',
+                        )}
+                        style={{ height: PREVIEW_HEIGHT }}
+                    >
+                        <img
+                            src={convertFileSrc(file.path)}
+                            draggable={false}
+                            style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                        />
+                    </button>
+                </ImageContextMenu>
             ))}
         </div>
     );
@@ -138,25 +140,29 @@ export function ImageView() {
             </div>
             <div className="flex flex-1 min-h-0 justify-center items-center gap-2 px-2">
                 {settings.showNeighbooringPictures && <PreviewStrip />}
-                <div className="relative flex-1 h-full flex">
-                    <ZoomableImage path={files.current.path} />
-                    {swipeGhost && (
-                        <div
-                            key={swipeGhost.path}
-                            className={cn(
-                                'absolute inset-0 flex items-center justify-center pointer-events-none',
-                                swipeGhost.direction === 'left' ? 'animate-swipe-out-left' : 'animate-swipe-out-right',
-                            )}
-                            onAnimationEnd={() => setSwipeGhost(null)}
-                        >
-                            <img
-                                src={convertFileSrc(swipeGhost.path)}
-                                draggable={false}
-                                style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
-                            />
-                        </div>
-                    )}
-                </div>
+                <ImageContextMenu path={files.current.path}>
+                    <div className="relative flex-1 h-full flex">
+                        <ZoomableImage path={files.current.path} />
+                        {swipeGhost && (
+                            <div
+                                key={swipeGhost.path}
+                                className={cn(
+                                    'absolute inset-0 flex items-center justify-center pointer-events-none',
+                                    swipeGhost.direction === 'left'
+                                        ? 'animate-swipe-out-left'
+                                        : 'animate-swipe-out-right',
+                                )}
+                                onAnimationEnd={() => setSwipeGhost(null)}
+                            >
+                                <img
+                                    src={convertFileSrc(swipeGhost.path)}
+                                    draggable={false}
+                                    style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
+                                />
+                            </div>
+                        )}
+                    </div>
+                </ImageContextMenu>
             </div>
         </div>
     );
