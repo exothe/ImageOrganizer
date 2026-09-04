@@ -39,4 +39,8 @@ export const api = {
     async mergeFaces(sessionId: number, selections: Record<number, string>): Promise<MergeFacesResult> {
         return await invoke('merge_faces', { sessionId, selections });
     },
+
+    async mergeFacesOra(sessionId: number, selections: Record<number, string>): Promise<MergeFacesResult> {
+        return await invoke('merge_faces_ora', { sessionId, selections });
+    },
 };

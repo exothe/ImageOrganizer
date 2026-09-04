@@ -43,7 +43,8 @@ fn main() {
             file_operations::save_delete_files,
             file_operations::open_file_with,
             face_merge::detect_merge_faces,
-            face_merge::merge_faces
+            face_merge::merge_faces,
+            face_merge::merge_faces_ora
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

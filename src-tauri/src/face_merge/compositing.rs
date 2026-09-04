@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use image::{GrayImage, Luma, Rgb, RgbImage};
+use image::{GrayImage, Luma, Rgb, RgbImage, RgbaImage};
 use imageproc::geometric_transformations::{warp_into, Border, Interpolation, Projection};
 use nalgebra::{Matrix3, Vector3};
 
@@ -13,7 +13,41 @@ const BOX_EXPANSION: f32 = 0.4;
 // The elliptical mask is fully opaque up to this normalized radius, then feathers out to 1.0.
 const FEATHER_START: f32 = 0.65;
 
+// One transplanted face as a positioned RGBA patch over the base photo: the warped, anchored
+// donor pixels with the feathered ellipse baked into the alpha channel. Flattening these over
+// the base yields the merged JPEG; exporting them as layers yields the editable ORA project.
+pub struct FaceLayer {
+    pub name: String,
+    pub x: u32,
+    pub y: u32,
+    pub rgba: RgbaImage,
+}
+
+pub struct Composite {
+    pub base_path: String,
+    pub base: RgbImage,
+    pub layers: Vec<FaceLayer>,
+}
+
 pub fn merge(session: &SessionSnapshot, selections: &HashMap<u32, String>) -> Result<String, FaceMergeError> {
+    let composite = build_composite(session, selections)?;
+    let merged = flatten(&composite);
+    let output_path = unique_output_path(&composite.base_path, "jpg");
+    merged
+        .save_with_format(&output_path, image::ImageFormat::Jpeg)
+        .map_err(|e| FaceMergeError::output_write(&output_path.to_string_lossy(), e))?;
+    Ok(output_path.to_string_lossy().into_owned())
+}
+
+pub fn merge_ora(session: &SessionSnapshot, selections: &HashMap<u32, String>) -> Result<String, FaceMergeError> {
+    let composite = build_composite(session, selections)?;
+    let merged = flatten(&composite);
+    let output_path = unique_output_path(&composite.base_path, "ora");
+    super::ora::write_ora(&output_path, &composite, &merged)?;
+    Ok(output_path.to_string_lossy().into_owned())
+}
+
+fn build_composite(session: &SessionSnapshot, selections: &HashMap<u32, String>) -> Result<Composite, FaceMergeError> {
     let selected_faces = resolve_selections(session, selections)?;
 
     let base_path = pick_base_photo(session, &selected_faces)?;
@@ -22,7 +56,7 @@ pub fn merge(session: &SessionSnapshot, selections: &HashMap<u32, String>) -> Re
         .try_inverse()
         .ok_or_else(|| FaceMergeError::alignment_failed(&base_path))?;
 
-    let mut base = image_io::load_oriented(&base_path)?;
+    let base = image_io::load_oriented(&base_path)?;
 
     // group donor faces by photo so each donor is decoded and warped exactly once
     let mut faces_by_donor: HashMap<&str, Vec<&DetectedFace>> = HashMap::new();
@@ -37,6 +71,7 @@ pub fn merge(session: &SessionSnapshot, selections: &HashMap<u32, String>) -> Re
         ));
     }
 
+    let mut layers = Vec::new();
     for (donor_path, faces) in &faces_by_donor {
         let donor_idx = session.photos.iter().position(|p| p.path == *donor_path).unwrap();
         // maps donor coords -> base coords (full resolution, oriented)
@@ -67,14 +102,36 @@ pub fn merge(session: &SessionSnapshot, selections: &HashMap<u32, String>) -> Re
                 None => (0, 0),
             };
             let roi = face_roi_in_base(donor_box, offset, base_face, base.width(), base.height());
-            blend_face(&mut base, &warped, &validity, roi, offset);
+            let donor_name = Path::new(donor_path)
+                .file_name()
+                .map(|n| n.to_string_lossy().into_owned())
+                .unwrap_or_else(|| (*donor_path).to_owned());
+            let name = format!("Person {} – {}", face.person_id + 1, donor_name);
+            if let Some(layer) = face_layer(&warped, &validity, roi, offset, name) {
+                layers.push(layer);
+            }
         }
     }
 
-    let output_path = unique_output_path(&base_path);
-    base.save_with_format(&output_path, image::ImageFormat::Jpeg)
-        .map_err(|e| FaceMergeError::output_write(&output_path.to_string_lossy(), e))?;
-    Ok(output_path.to_string_lossy().into_owned())
+    Ok(Composite { base_path, base, layers })
+}
+
+// Alpha-composites all face layers over a copy of the base photo.
+fn flatten(composite: &Composite) -> RgbImage {
+    let mut merged = composite.base.clone();
+    for layer in &composite.layers {
+        for (dx, dy, p) in layer.rgba.enumerate_pixels() {
+            let alpha = p[3] as f32 / 255.0;
+            if alpha <= 0.0 {
+                continue;
+            }
+            let b = merged.get_pixel_mut(layer.x + dx, layer.y + dy);
+            for c in 0..3 {
+                b[c] = (b[c] as f32 * (1.0 - alpha) + p[c] as f32 * alpha).round() as u8;
+            }
+        }
+    }
+    merged
 }
 
 // Validates that every selection points at a detected face of that person and returns those faces.
@@ -210,14 +267,22 @@ fn face_roi_in_base(
     }
 }
 
-// Alpha-blends the warped donor over the base within an analytically feathered ellipse.
-// (Equivalent to a Gaussian-feathered mask, but without blurring a full-resolution buffer.)
-// `offset` shifts the donor content: base pixel (x, y) receives donor pixel (x - dx, y - dy),
-// placing the donor face onto the base face position when the person moved between shots.
-fn blend_face(base: &mut RgbImage, warped: &RgbImage, validity: &GrayImage, roi: Roi, offset: (i32, i32)) {
-    if roi.radius.0 <= 0.0 || roi.radius.1 <= 0.0 {
-        return;
+// Cuts the anchored donor face out of the warped donor as an RGBA patch. Alpha follows an
+// analytically feathered ellipse (equivalent to a Gaussian-feathered mask, but without blurring
+// a full-resolution buffer), multiplied by the warp validity. `offset` shifts the donor content:
+// patch pixel at base position (x, y) samples donor pixel (x - dx, y - dy), placing the donor
+// face onto the base face position when the person moved between shots.
+fn face_layer(
+    warped: &RgbImage,
+    validity: &GrayImage,
+    roi: Roi,
+    offset: (i32, i32),
+    name: String,
+) -> Option<FaceLayer> {
+    if roi.radius.0 <= 0.0 || roi.radius.1 <= 0.0 || roi.x1 <= roi.x0 || roi.y1 <= roi.y0 {
+        return None;
     }
+    let mut rgba = RgbaImage::new(roi.x1 - roi.x0, roi.y1 - roi.y0);
     for y in roi.y0..roi.y1 {
         for x in roi.x0..roi.x1 {
             let nx = (x as f32 + 0.5 - roi.center.0) / roi.radius.0;
@@ -245,26 +310,33 @@ fn blend_face(base: &mut RgbImage, warped: &RgbImage, validity: &GrayImage, roi:
             if alpha <= 0.0 {
                 continue;
             }
-            let b = base.get_pixel_mut(x, y);
             let w = warped.get_pixel(sx, sy);
-            for c in 0..3 {
-                b[c] = (b[c] as f32 * (1.0 - alpha) + w[c] as f32 * alpha).round() as u8;
-            }
+            rgba.put_pixel(
+                x - roi.x0,
+                y - roi.y0,
+                image::Rgba([w[0], w[1], w[2], (alpha * 255.0).round() as u8]),
+            );
         }
     }
+    Some(FaceLayer {
+        name,
+        x: roi.x0,
+        y: roi.y0,
+        rgba,
+    })
 }
 
-// {stem}_bestshot.jpg next to the base photo, appending _2, _3, ... on collision.
-fn unique_output_path(base_path: &str) -> PathBuf {
+// {stem}_bestshot.{ext} next to the base photo, appending _2, _3, ... on collision.
+fn unique_output_path(base_path: &str, ext: &str) -> PathBuf {
     let base = Path::new(base_path);
     let dir = base.parent().unwrap_or_else(|| Path::new("."));
     let stem = base.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_default();
-    let first = dir.join(format!("{}_bestshot.jpg", stem));
+    let first = dir.join(format!("{}_bestshot.{}", stem, ext));
     if !first.exists() {
         return first;
     }
     (2..)
-        .map(|n| dir.join(format!("{}_bestshot_{}.jpg", stem, n)))
+        .map(|n| dir.join(format!("{}_bestshot_{}.{}", stem, n, ext)))
         .find(|p| !p.exists())
         .unwrap()
 }

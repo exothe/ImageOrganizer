@@ -1,20 +1,24 @@
 import { Button, Spinner } from '@radix-ui/themes';
-import { ArrowLeft, ArrowRight, Users, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Layers, Users, X } from 'lucide-react';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../../api';
 import { getBasename } from '../../common/functions';
+import { useSettingsContext } from '../../components/settings/SettingsContext';
 import { initialTransform, ZoomableImage, ZoomTransform } from '../../components/zoomable-image/ZoomableImage';
 import { DetectFacesResult, FaceMergeError } from '../../model/model';
 import { useImageRoute } from '../image/ImageRoute';
 import { FaceBoxOverlay } from './FaceBoxOverlay';
 import { ImageContextMenu } from '../../components/image-context-menu/ImageContextMenu';
 
+// 'jpeg' → flat photo back into the review flow; 'ora' → layered GIMP project, opened externally
+type MergeOutput = 'jpeg' | 'ora';
+
 type MergeState =
     | { phase: 'off' }
     | { phase: 'detecting' }
     | { phase: 'selecting'; result: DetectFacesResult; selections: Record<number, string> }
-    | { phase: 'merging'; result: DetectFacesResult; selections: Record<number, string> }
+    | { phase: 'merging'; result: DetectFacesResult; selections: Record<number, string>; output: MergeOutput }
     | { phase: 'error'; message: string };
 
 function errorMessage(error: unknown): string {
@@ -24,6 +28,7 @@ function errorMessage(error: unknown): string {
 
 export function ImageCompare() {
     const { markedFiles, decideMarkedFile, addMergedFile } = useImageRoute();
+    const { settings } = useSettingsContext();
     const navigate = useNavigate();
     // one transform for all images: zooming/panning one zooms/pans them all
     const [transform, setTransform] = React.useState<ZoomTransform>(initialTransform);
@@ -67,15 +72,21 @@ export function ImageCompare() {
         );
     }
 
-    async function runMerge() {
+    async function runMerge(output: MergeOutput) {
         if (merge.phase !== 'selecting') {
             return;
         }
         const { result, selections } = merge;
-        setMerge({ phase: 'merging', result, selections });
+        setMerge({ phase: 'merging', result, selections, output });
         try {
-            const { output_path } = await api.mergeFaces(result.session_id, selections);
-            addMergedFile(output_path);
+            if (output === 'jpeg') {
+                const { output_path } = await api.mergeFaces(result.session_id, selections);
+                addMergedFile(output_path);
+            } else {
+                // layered project for manual adjustment; open it in the external editor right away
+                const { output_path } = await api.mergeFacesOra(result.session_id, selections);
+                await api.openFileWith(output_path, settings.externalImageEditor || undefined);
+            }
             setMerge({ phase: 'off' });
         } catch (error) {
             setMerge({ phase: 'error', message: errorMessage(error) });
@@ -167,7 +178,8 @@ export function ImageCompare() {
                     <span className="text-sm">
                         {merge.phase === 'merging' ? (
                             <span className="flex items-center gap-2">
-                                <Spinner /> Foto wird zusammengeführt…
+                                <Spinner />
+                                {merge.output === 'ora' ? 'GIMP-Projekt wird erstellt…' : 'Foto wird zusammengeführt…'}
                             </span>
                         ) : (
                             `Gesichter aus ${selectedPhotoCount} ${selectedPhotoCount === 1 ? 'Foto' : 'Fotos'} ausgewählt`
@@ -182,13 +194,26 @@ export function ImageCompare() {
                         Abbrechen
                     </Button>
                     <Button
+                        variant="outline"
+                        disabled={merge.phase === 'merging' || selectedPhotoCount < 2}
+                        title={
+                            selectedPhotoCount < 2
+                                ? 'Gesichter aus mindestens 2 verschiedenen Fotos auswählen'
+                                : 'Ebenen-Projekt (.ora) zur manuellen Nachbearbeitung erstellen und öffnen'
+                        }
+                        onClick={() => runMerge('ora')}
+                    >
+                        <Layers size={16} />
+                        Als Ebenen-Projekt
+                    </Button>
+                    <Button
                         disabled={merge.phase === 'merging' || selectedPhotoCount < 2}
                         title={
                             selectedPhotoCount < 2
                                 ? 'Gesichter aus mindestens 2 verschiedenen Fotos auswählen'
                                 : undefined
                         }
-                        onClick={runMerge}
+                        onClick={() => runMerge('jpeg')}
                     >
                         Zusammenführen
                     </Button>

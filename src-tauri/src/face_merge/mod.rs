@@ -4,6 +4,7 @@ mod compositing;
 mod detection;
 mod error;
 mod image_io;
+mod ora;
 
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -110,6 +111,30 @@ pub async fn merge_faces(
 
     let output_path =
         tauri::async_runtime::spawn_blocking(move || compositing::merge(&session_data, &selections))
+            .await
+            .map_err(|e| FaceMergeError::Io(format!("Interner Fehler: {}", e)))??;
+
+    Ok(MergeFacesResult { output_path })
+}
+
+// Same merge, but written as a layered OpenRaster project (base photo + one layer per
+// transplanted face) for manual adjustment in GIMP/Krita.
+#[tauri::command]
+pub async fn merge_faces_ora(
+    state: tauri::State<'_, FaceMergeState>,
+    session_id: u64,
+    selections: HashMap<u32, String>,
+) -> Result<MergeFacesResult, FaceMergeError> {
+    let session_data = {
+        let guard = state.session.lock().unwrap();
+        match guard.as_ref() {
+            Some(s) if s.session_id == session_id => SessionSnapshot::from(s),
+            _ => return Err(FaceMergeError::SessionExpired),
+        }
+    };
+
+    let output_path =
+        tauri::async_runtime::spawn_blocking(move || compositing::merge_ora(&session_data, &selections))
             .await
             .map_err(|e| FaceMergeError::Io(format!("Interner Fehler: {}", e)))??;
 
@@ -309,5 +334,18 @@ mod tests {
             mean_brightness_gain
         );
         let _ = diff_sum;
+
+        // ORA export of the same merge: layered project with base + one face layer
+        let ora_output = compositing::merge_ora(&snapshot, &selections).expect("ora export runs");
+        println!("ora output: {}", ora_output);
+        assert!(ora_output.ends_with(".ora"));
+        let file = std::fs::File::open(&ora_output).unwrap();
+        let mut archive = zip::ZipArchive::new(file).unwrap();
+        assert_eq!(archive.by_index(0).unwrap().name(), "mimetype");
+        let mut xml = String::new();
+        std::io::Read::read_to_string(&mut archive.by_name("stack.xml").unwrap(), &mut xml).unwrap();
+        println!("stack.xml:\n{}", xml);
+        assert!(xml.contains("data/layer1.png"), "expected one face layer: {}", xml);
+        assert!(!xml.contains("data/layer2.png"), "expected exactly one face layer: {}", xml);
     }
 }
