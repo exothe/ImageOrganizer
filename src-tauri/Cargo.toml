@@ -30,6 +30,9 @@ nalgebra = "0.35.0"
 rand = "0.9"
 open = "5.3.6"
 zip = { version = "8.6.0", default-features = false }
+diesel = { version = "2.3.13", features = ["sqlite", "returning_clauses_for_sqlite_3_35"] }
+diesel_migrations = "2.3.2"
+libsqlite3-sys = { version = "0.38", features = ["bundled"] }
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!
