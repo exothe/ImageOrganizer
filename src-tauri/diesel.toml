@@ -1,0 +1,8 @@
+# Configuration for the diesel CLI. `schema.rs` is checked in, regenerate it
+# after adding a migration with: diesel migration run --database-url <file>
+
+[print_schema]
+file = "src/database/schema.rs"
+
+[migrations_directory]
+dir = "migrations"
