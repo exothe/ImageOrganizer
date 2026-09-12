@@ -40,6 +40,14 @@ export const api = {
         return await invoke('merge_faces', { sessionId, selections });
     },
 
+    async getSettings(): Promise<Record<string, unknown>> {
+        return await invoke('get_settings');
+    },
+
+    async setSettings(settings: Record<string, unknown>): Promise<void> {
+        return await invoke('set_settings', { newSettings: settings });
+    },
+
     async mergeFacesOra(sessionId: number, selections: Record<number, string>): Promise<MergeFacesResult> {
         return await invoke('merge_faces_ora', { sessionId, selections });
     },

@@ -4,6 +4,7 @@
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
 
+mod database;
 mod face_merge;
 mod file_operations;
 
@@ -32,6 +33,8 @@ fn main() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
         .setup(|app| {
+            app.manage(database::Database::init(app.handle())?);
+
             #[cfg(debug_assertions)]
             app.get_webview_window("main").unwrap().open_devtools();
             Ok(())
@@ -44,7 +47,9 @@ fn main() {
             file_operations::open_file_with,
             face_merge::detect_merge_faces,
             face_merge::merge_faces,
-            face_merge::merge_faces_ora
+            face_merge::merge_faces_ora,
+            database::settings::get_settings,
+            database::settings::set_settings
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
