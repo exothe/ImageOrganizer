@@ -2,8 +2,11 @@ import { Button, Dialog } from '@radix-ui/themes';
 import React from 'react';
 import { SaveAction, useSettingsContext } from './SettingsContext';
 import { Option, Select } from '../../lib/select/Select';
+import { Input } from '../input/Input';
 import { SortVariantParamsForm, SortVariantSelect } from './SortVariantSettings';
 import { getVersion } from '@tauri-apps/api/app';
+import { open } from '@tauri-apps/plugin-dialog';
+import { platform } from '@tauri-apps/plugin-os';
 import { useEffectOnce } from 'react-use';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { Info } from 'lucide-react';
@@ -11,6 +14,23 @@ import { Info } from 'lucide-react';
 export function SettingsDialog({ children, ...props }: React.PropsWithChildren<Dialog.TriggerProps>) {
     const { settings, setSettings } = useSettingsContext();
     const [version, setVersion] = React.useState<string | undefined>();
+
+    // Typing a display name ("GIMP 3.2.2") does not identify an executable on Windows,
+    // so let the user pick the program file itself.
+    async function selectExternalImageEditor() {
+        const isWindows = platform() === 'windows';
+        const selected = await open({
+            multiple: false,
+            directory: platform() === 'macos',
+            filters: isWindows ? [{ name: 'Programm', extensions: ['exe'] }] : undefined,
+        });
+        if (selected === null) return;
+
+        setSettings((settings) => ({
+            ...settings,
+            externalImageEditor: Array.isArray(selected) ? selected[0] : selected,
+        }));
+    }
 
     useEffectOnce(() => {
         getVersion().then((data) => setVersion(data));
@@ -88,6 +108,25 @@ export function SettingsDialog({ children, ...props }: React.PropsWithChildren<D
                         <Option value="true">Ja</Option>
                         <Option value="false">Nein</Option>
                     </Select>
+                </div>
+                <div className="flex justify-between gap-4 items-center">
+                    <div className="whitespace-nowrap">Externes Bildbearbeitungsprogramm</div>
+                    <div className="flex gap-2 items-center">
+                        <Input
+                            className="w-40"
+                            placeholder="z.B. GIMP"
+                            value={settings.externalImageEditor}
+                            onChange={(event) =>
+                                setSettings((settings) => ({
+                                    ...settings,
+                                    externalImageEditor: event.target.value,
+                                }))
+                            }
+                        />
+                        <Button variant="soft" onClick={selectExternalImageEditor}>
+                            Auswählen
+                        </Button>
+                    </div>
                 </div>
                 <div className="w-full flex justify-end">
                     <Dialog.Close>

@@ -126,6 +126,116 @@ pub struct RemoveResult {
     failed_files: Vec<String>,
 }
 
+// Opens a file in an external program (e.g. GIMP); without a program, the system default is used.
+// On macOS the program is resolved as an application name (`open -a`), elsewhere as a command.
+#[tauri::command]
+pub async fn open_file_with(path: String, program: Option<String>) -> Result<(), String> {
+    let result = match program.as_deref().map(str::trim) {
+        Some(program) if !program.is_empty() => open::with_detached(&path, resolve_program(program)),
+        _ => open::that_detached(&path),
+    };
+    result.map_err(|e| format!("Programm konnte nicht gestartet werden: {}", e))
+}
+
+#[cfg(not(target_os = "windows"))]
+fn resolve_program(program: &str) -> String {
+    program.to_string()
+}
+
+// Windows only knows executables on PATH or full paths — the display name from
+// "Apps & Features" (e.g. "GIMP" / "GIMP 3.2.2") is not one. Map such a name onto the
+// real .exe by scanning the usual install roots; falls back to the input unchanged.
+#[cfg(target_os = "windows")]
+fn resolve_program(program: &str) -> String {
+    if Path::new(program).is_file() {
+        return program.to_string();
+    }
+    find_installed_executable(program).unwrap_or_else(|| program.to_string())
+}
+
+#[cfg(target_os = "windows")]
+fn find_installed_executable(program: &str) -> Option<String> {
+    use std::fs::read_dir;
+
+    let wanted = normalize_program_name(program);
+    // Too short a name would match almost any directory.
+    if wanted.len() < 3 {
+        return None;
+    }
+
+    let mut roots: Vec<std::path::PathBuf> = ["ProgramFiles", "ProgramFiles(x86)", "ProgramW6432"]
+        .iter()
+        .filter_map(|key| std::env::var_os(key))
+        .map(std::path::PathBuf::from)
+        .collect();
+    if let Some(local) = std::env::var_os("LOCALAPPDATA") {
+        roots.push(std::path::PathBuf::from(local).join("Programs"));
+    }
+
+    // Newest install first: "GIMP 3" should win over "GIMP 2".
+    let mut candidates: Vec<std::path::PathBuf> = roots
+        .iter()
+        .filter_map(|root| read_dir(root).ok())
+        .flatten()
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.path().is_dir())
+        .filter(|entry| {
+            let dir = normalize_program_name(&entry.file_name().to_string_lossy());
+            !dir.is_empty() && (dir.starts_with(&wanted) || wanted.starts_with(&dir))
+        })
+        .map(|entry| entry.path())
+        .collect();
+    candidates.sort();
+    candidates.reverse();
+
+    candidates
+        .iter()
+        .flat_map(|dir| [dir.join("bin"), dir.clone()])
+        .find_map(|dir| find_executable_in_dir(&dir, &wanted))
+}
+
+// Picks e.g. bin/gimp-3.2.exe, skipping console/debug/uninstaller variants.
+#[cfg(target_os = "windows")]
+fn find_executable_in_dir(dir: &Path, wanted: &str) -> Option<String> {
+    let mut matches: Vec<std::path::PathBuf> = std::fs::read_dir(dir)
+        .ok()?
+        .filter_map(|entry| entry.ok())
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.extension()
+                .map(|ext| ext.eq_ignore_ascii_case("exe"))
+                .unwrap_or(false)
+        })
+        .filter(|path| {
+            let stem = path
+                .file_stem()
+                .map(|stem| stem.to_string_lossy().to_lowercase())
+                .unwrap_or_default();
+            if ["console", "uninst", "debug", "setup", "update", "crash"]
+                .iter()
+                .any(|bad| stem.contains(bad))
+            {
+                return false;
+            }
+            let stem = normalize_program_name(&stem);
+            stem.starts_with(wanted) || wanted.starts_with(&stem)
+        })
+        .collect();
+    matches.sort_by_key(|path| path.to_string_lossy().len());
+    matches
+        .first()
+        .map(|path| path.to_string_lossy().to_string())
+}
+
+// "GIMP 3.2.2" and "gimp-3.2" both collapse to "gimp322"/"gimp32" so prefix matching works.
+#[cfg(target_os = "windows")]
+fn normalize_program_name(name: &str) -> String {
+    name.chars()
+        .filter(|c| c.is_ascii_alphanumeric())
+        .flat_map(|c| c.to_lowercase())
+        .collect()
+}
+
 #[tauri::command]
 pub async fn save_delete_files(files: Vec<UserFile>) -> RemoveResult {
     let mut result = RemoveResult {
