@@ -19,8 +19,8 @@ struct Setting {
 
 #[tauri::command]
 pub fn get_settings(database: tauri::State<Database>) -> Result<HashMap<String, Value>, DatabaseError> {
-    let mut connection = database.0.lock().map_err(|_| DatabaseError::Poisoned)?;
-    let rows: Vec<Setting> = settings::table.select(Setting::as_select()).load(&mut *connection)?;
+    let rows: Vec<Setting> =
+        database.with_connection(|connection| Ok(settings::table.select(Setting::as_select()).load(connection)?))?;
 
     Ok(rows
         .into_iter()
@@ -43,18 +43,18 @@ pub fn set_settings(
         })
         .collect();
 
-    let mut connection = database.0.lock().map_err(|_| DatabaseError::Poisoned)?;
-    connection.transaction(|connection| {
-        for row in rows {
-            diesel::insert_into(settings::table)
-                .values(&row)
-                .on_conflict(settings::key)
-                .do_update()
-                .set(settings::value.eq(&row.value))
-                .execute(connection)?;
-        }
-        Ok::<_, diesel::result::Error>(())
-    })?;
-
-    Ok(())
+    database.with_connection(|connection| {
+        connection.transaction(|connection| {
+            for row in rows {
+                diesel::insert_into(settings::table)
+                    .values(&row)
+                    .on_conflict(settings::key)
+                    .do_update()
+                    .set(settings::value.eq(&row.value))
+                    .execute(connection)?;
+            }
+            Ok::<_, diesel::result::Error>(())
+        })?;
+        Ok(())
+    })
 }

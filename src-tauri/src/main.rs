@@ -70,6 +70,13 @@ fn main() {
                         app_handle.state::<OpenWithFiles>().0.lock().unwrap().extend(paths);
                     }
                 }
+                // Tauri ends the process without dropping managed state, so the
+                // database has to be closed here to merge the WAL back into it.
+                tauri::RunEvent::Exit => {
+                    if let Some(database) = app_handle.try_state::<database::Database>() {
+                        database.close();
+                    }
+                }
                 _ => {}
             }
         });
