@@ -17,6 +17,7 @@
                 <string>heic</string>
                 <string>heif</string>
                 <string>avif</string>
+                <string>jxl</string>
                 <string>svg</string>
             </array>
             <key>CFBundleTypeName</key>

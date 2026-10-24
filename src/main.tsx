@@ -12,6 +12,7 @@ import { ImageRoute } from './routes/image/ImageRoute';
 import { ImageList } from './routes/image/ImageList';
 import { ImageView } from './routes/image-view/ImageView';
 import { ImageCompare } from './routes/image-compare/ImageCompare';
+import { detectImageSupport } from './common/imageSrc';
 
 const router = createHashRouter([
     {
@@ -44,18 +45,20 @@ const router = createHashRouter([
     },
 ]);
 
-ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-    <React.StrictMode>
-        <Theme>
-            <TooltipProvider>
-                <SettingsContextProvider>
-                    <OrganizerContextProvider>
-                        <FileListFocusContextProvider>
-                            <RouterProvider router={router} />
-                        </FileListFocusContextProvider>
-                    </OrganizerContextProvider>
-                </SettingsContextProvider>
-            </TooltipProvider>
-        </Theme>
-    </React.StrictMode>,
+detectImageSupport().then(() =>
+    ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+        <React.StrictMode>
+            <Theme>
+                <TooltipProvider>
+                    <SettingsContextProvider>
+                        <OrganizerContextProvider>
+                            <FileListFocusContextProvider>
+                                <RouterProvider router={router} />
+                            </FileListFocusContextProvider>
+                        </OrganizerContextProvider>
+                    </SettingsContextProvider>
+                </TooltipProvider>
+            </Theme>
+        </React.StrictMode>,
+    ),
 );

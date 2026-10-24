@@ -2,7 +2,7 @@ import { Button } from '@radix-ui/themes';
 import { useFileListFocusContext } from '../../components/file-list/fileListFocusContext';
 import { Columns2, X } from 'lucide-react';
 import { getBasename } from '../../common/functions';
-import { convertFileSrc } from '@tauri-apps/api/core';
+import { imageSrc } from '../../common/imageSrc';
 import { useSettingsContext } from '../../components/settings/SettingsContext';
 import { Switch } from '../../components/switch/Switch';
 import { ZoomableImage } from '../../components/zoomable-image/ZoomableImage';
@@ -14,6 +14,8 @@ import { ImageContextMenu } from '../../components/image-context-menu/ImageConte
 
 const PREVIEW_HEIGHT = 96;
 const PREVIEW_GAP = 8;
+// long edge of backend-decoded previews, leaves headroom for high-dpi screens
+const PREVIEW_DECODE_SIZE = 256;
 
 function PreviewStrip() {
     const { fileListId, selectedIndex } = useFileListFocusContext();
@@ -59,7 +61,7 @@ function PreviewStrip() {
                         style={{ height: PREVIEW_HEIGHT }}
                     >
                         <img
-                            src={convertFileSrc(file.path)}
+                            src={imageSrc(file.path, PREVIEW_DECODE_SIZE)}
                             draggable={false}
                             style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
                         />
@@ -155,7 +157,7 @@ export function ImageView() {
                                 onAnimationEnd={() => setSwipeGhost(null)}
                             >
                                 <img
-                                    src={convertFileSrc(swipeGhost.path)}
+                                    src={imageSrc(swipeGhost.path)}
                                     draggable={false}
                                     style={{ maxHeight: '100%', maxWidth: '100%', objectFit: 'contain' }}
                                 />

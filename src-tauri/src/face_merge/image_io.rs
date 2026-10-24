@@ -1,6 +1,8 @@
 use image::{DynamicImage, ImageDecoder, ImageReader, RgbImage};
+use std::path::Path;
 
 use super::error::FaceMergeError;
+use crate::image_decoding;
 
 // Long edge of the downscaled working copies used for feature matching and face detection.
 pub const WORKING_LONG_EDGE: u32 = 1600;
@@ -8,6 +10,14 @@ pub const WORKING_LONG_EDGE: u32 = 1600;
 // Decodes an image and applies its EXIF orientation, so all downstream coordinates
 // are in the same oriented pixel space that the webview displays.
 pub fn load_oriented(path: &str) -> Result<RgbImage, FaceMergeError> {
+    if image_decoding::is_jxl(Path::new(path)) {
+        return image_decoding::decode_jxl(Path::new(path))
+            .map(DynamicImage::into_rgb8)
+            .map_err(|e| match e {
+                image::ImageError::IoError(e) => FaceMergeError::io(path, e),
+                _ => FaceMergeError::unsupported_format(path),
+            });
+    }
     let reader = ImageReader::open(path)
         .map_err(|e| FaceMergeError::io(path, e))?
         .with_guessed_format()

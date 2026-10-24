@@ -43,7 +43,7 @@
                 "scope": ["*/**"],
                 "enable": true
             },
-            "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost; connect-src ipc: http://ipc.localhost; style-src 'unsafe-inline' 'self'"
+            "csp": "default-src 'self'; img-src 'self' asset: http://asset.localhost decoded: http://decoded.localhost https://decoded.localhost data:; connect-src ipc: http://ipc.localhost; style-src 'unsafe-inline' 'self'"
         },
         "windows": [
             {

@@ -1,6 +1,6 @@
-import { convertFileSrc } from '@tauri-apps/api/core';
 import React from 'react';
 import { cn } from '../utils';
+import { imageSrc } from '../../common/imageSrc';
 
 const MIN_SCALE = 1;
 const MAX_SCALE = 10;
@@ -171,7 +171,7 @@ export function ZoomableImage({
         >
             <img
                 ref={imgRef}
-                src={convertFileSrc(path)}
+                src={imageSrc(path)}
                 draggable={false}
                 style={{
                     maxHeight: '100%',

@@ -7,6 +7,7 @@ use tauri::{Emitter, Manager};
 mod database;
 mod face_merge;
 mod file_operations;
+mod image_decoding;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -32,6 +33,9 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_os::init())
+        .register_asynchronous_uri_scheme_protocol(image_decoding::URI_SCHEME, |_ctx, request, responder| {
+            image_decoding::handle_request(request, responder)
+        })
         .setup(|app| {
             app.manage(database::Database::init(app.handle())?);
 
