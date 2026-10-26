@@ -114,7 +114,7 @@ export function ImageRoute() {
             directory: false,
             filters: [
                 {
-                    extensions: ['svg', 'png', 'jpeg', 'jpg', 'webp', 'gif'],
+                    extensions: ['svg', 'png', 'jpeg', 'jpg', 'webp', 'gif', 'jxl'],
                     name: 'image-filter',
                 },
             ],
